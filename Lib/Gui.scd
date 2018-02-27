@@ -1,0 +1,277 @@
+// ------------ GUI ------------
+
+~bo.presetButton = Array.newClear(10);
+
+~bo.makeWindow = { |evt|
+	var win, fView, cView, buttonStop, buttonOSC, fSaveRegistration, fLoadRegistration, selectedPreset = 0;
+	var buttonClearRegs, buttonClearRegsClock, buttonStopClock, buttonSaveRegs;
+	var cellWidth = 135, cellHeight = 14, winHeight = 755, winWidth = (cellWidth + 20) * 13, buttonWidth = cellWidth* 1.05;
+	var font = Font("Courier", 11), bigFont = Font("Courier", 13);
+	var titleColor = Color.blue(1, 0.1), buttonColor = Color.blue, manualColor = Color.blue(1,0.3);
+
+	evt.w = win = Window( "Baroque Organ Register Board", Rect(0, 1000, winWidth, winHeight), scroll: true).background_(Color.grey).front;
+	win.addFlowLayout;
+	cView = CompositeView(evt.w, (winWidth - 100) @ 50).background_(Color.white);
+	cView.addFlowLayout;
+
+	// Title
+	StaticText(cView, buttonWidth @ (cellHeight*2)).string_("BAROQUE ORGAN").font_(bigFont).align_(\center);
+	StaticText(cView, buttonWidth @ (cellHeight*2)).string_("REGISTER BOARD").font_(bigFont).align_(\center);
+
+	// Stop all notes
+	buttonStop = SmoothButton(cView, buttonWidth @ (cellHeight*2))
+	.radius_(2).border_(1).canFocus_(false).font_(font)
+	.states_( [ ["STOP ALL NOTES", Color.red, Color.white], ["STOP ALL NOTES", Color.white, Color.red] ] )
+	.action_({ |bt|
+		if(bt.value == 1, {
+			evt.panic();
+			buttonStopClock = AppClock.sched(0.1, { bt.value = 0 });
+		});
+	});
+
+	// Clear all registers
+	buttonClearRegs = SmoothButton(cView, buttonWidth @ (cellHeight*2))
+	.radius_(2).border_(1).canFocus_(false).font_(font)
+	.states_( [ ["Clear all registers", Color.black, Color.white], ["Clear all registers", Color.white, buttonColor] ] )
+	.action_({ |bt|
+		if(bt.value == 1, {
+			evt.buttons.keysValuesDo({
+				arg man, buttons;
+				evt.buttons[man].keysValuesDo({
+					arg index, button;
+					button.valueAction_(0);
+				});
+			});
+			buttonClearRegsClock = AppClock.sched(0.1, { bt.value = 0 });
+		});
+	});
+
+	// Save registration
+	buttonSaveRegs = SmoothButton(cView, buttonWidth @ (cellHeight*2))
+	.radius_(2).border_(1).canFocus_(false).font_(font)
+	.states_( [ ["Save registration", Color.black, Color.white], ["Save registration", Color.white, buttonColor] ] )
+	.action_({ |bt|
+		if(bt.value == 1, {
+			fSaveRegistration.value(selectedPreset);
+			fLoadRegistration.value(selectedPreset, true);
+			{ bt.value = 0 }.defer(0.1);
+		});
+	});
+
+	// OSC monitor
+	buttonOSC = SmoothButton(cView, buttonWidth @ (cellHeight*2))
+	.radius_(2).border_(1).canFocus_(false).font_(font)
+	.states_( [ ["OSC Monitor OFF", Color.black, Color.white], ["OSC monitor ON", Color.white, buttonColor] ] )
+	.action_({ |bt|
+		~oscOutMonitor = bt.value;
+		("OSC Out Monitor is" + if(~oscOutMonitor == 1, { "ON" }, { "OFF" })).postln;
+	});
+	buttonOSC.value = ~oscOutMonitor ? 0;
+
+	// Empty row
+	StaticText(cView, (buttonWidth*0.2) @ (cellHeight*2)).string_("").font_(bigFont).align_(\center);
+
+	// registration preset buttons
+	10.do { |index|
+		~bo.presetButton[index] = SmoothButton(cView, (cellHeight*2) @ (cellHeight*2))
+		.radius_(2).border_(1).canFocus_(false).font_(font)
+		.states_( [ [(index+1).asString, Color.black, Color.white], [(index+1).asString, Color.white, buttonColor] ] )
+		.action_({ |button|
+			button.value = 1;
+			selectedPreset = index;
+			// switch off all other buttons
+			~bo.presetButton.do { |b, i|
+				if(i !== index, { b.value = 0 });
+			};
+			fLoadRegistration.value(index);
+		});
+	};
+
+	// function to generate layere lanes
+	fView = {
+		arg title, chan, layer, color = titleColor, delay = false, notesButtons = Array.newClear(7);
+		var cView, buttons = OEM(), halfWidth = cellWidth;
+		cView = CompositeView(evt.w, (cellWidth + 8) @ (winHeight - 62)).background_(Color.white);
+		cView.addFlowLayout;
+		// Title
+		if(delay, { halfWidth = cellWidth * 0.45 });
+		StaticText(cView, halfWidth @ cellHeight).string_(title).align_(\center).font_(font).background_(color);
+		if(delay, {
+			StaticText(cView, (halfWidth * 0.6) @ cellHeight).string_("delay").align_(\center).font_(font);
+			NumberBox(cView, (halfWidth * 0.5) @ cellHeight).align_(\center).value_(0).font_(font)
+			.action_({ |nb|
+				evt.delay(chan, layer, nb.value);
+			});
+		});
+		// Empty row
+		StaticText(cView, cellWidth @ (cellHeight * 0.3)).string_("").align_(\center).font_(font).background_(Color.white);
+		// trigger notes
+		[37, 45, 60, 67, 75, 84, 89].do { |note, i|
+			notesButtons[i] = SmoothButton(cView, (cellHeight+1) @ cellHeight)
+			.radius_(2).border_(1).canFocus_(false).font_(font)
+			.states_( [ [note.asString, buttonColor, Color.white], [note.asString, Color.white, buttonColor] ] )
+			.action_({ |bt|
+				~bo.note(chan, layer, note, 127 * bt.value);
+			});
+		};
+		// Stop all notes
+		SmoothButton(cView, cellWidth @ cellHeight)
+		.radius_(2).border_(1).canFocus_(false).font_(font)
+		.states_( [ ["Stop all notes", buttonColor, Color.white], ["Stop all notes", Color.white, buttonColor] ] )
+		.action_({ |bt|
+			if(bt.value == 1, {
+				evt.panic(chan, layer);
+				7.do { |i|
+					notesButtons[i].value = 0;
+				};
+				{ bt.value = 0 }.defer(0.1);
+			});
+		});
+		// Clear all registers
+		SmoothButton(cView, cellWidth @ cellHeight)
+		.radius_(2).border_(1).canFocus_(false).font_(font)
+		.states_( [ ["Clear registers", buttonColor, Color.white], ["Clear registers", Color.white, buttonColor] ] )
+		.action_({ |bt|
+			if(bt.value == 1, {
+				buttons.keysValuesDo {
+					arg index, button;
+					button.valueAction_(0);
+				};
+				{ bt.value = 0 }.defer(0.1);
+			});
+		});
+		// Empty row
+		StaticText(cView, cellWidth @ (cellHeight * 0.3)).string_("").align_(\center).font_(font).background_(Color.white);
+		// Register buttons
+		evt.registers.keysValuesDo({ |key, value|
+			buttons[value] = (SmoothButton(cView, cellWidth @ cellHeight)
+				.radius_(2).border_(1).canFocus_(false).font_(font)
+				.states_( [ [key.asString, Color.black, Color.white], [key.asString, Color.white, buttonColor] ] )
+				.action_({ |bt|
+					switch( bt.value,
+						1, { evt.regAdd(chan, layer, value) },
+						0, { evt.regAdd(chan, layer, value.neg ) }
+					);
+				});
+			);
+		});
+		buttons
+	};
+
+	// layer lanes
+	evt.buttons = OEM();
+	evt.buttons.p = fView.value("Pedals - Layer 1", ~bo.ped, 1, manualColor);
+	evt.buttons.m1 = fView.value("Manual I - Layer 1", ~bo.man1, 1, manualColor);
+	evt.buttons.m21 = fView.value("Manual II - Layer 1", ~bo.man2, 1, manualColor);
+	evt.buttons.m22 = fView.value("Layer 2", ~bo.man2, 2);
+	evt.buttons.m23 = fView.value("Layer 3", ~bo.man2, 3);
+	evt.buttons.m24 = fView.value("Layer 4", ~bo.man2, 4);
+	evt.buttons.m31 = fView.value("Manual III - Layer 1", ~bo.man3, 1, manualColor);
+	evt.buttons.m32 = fView.value("Layer 2", ~bo.man3, 2, delay: true);
+	evt.buttons.m33 = fView.value("Layer 3", ~bo.man3, 3, delay: true);
+	evt.buttons.m34 = fView.value("Layer 4", ~bo.man3, 4, delay: true);
+	evt.buttons.m35 = fView.value("Layer 5", ~bo.man3, 5, delay: true);
+	evt.buttons.m36 = fView.value("Layer 6", ~bo.man3, 6, delay: true);
+	evt.buttons.m37 = fView.value("Layer 7", ~bo.man3, 7, delay: true);
+
+	// Function to save the registration into a preset
+	fSaveRegistration = {
+		arg preset;
+		var registrationsFile, registrationPresets, path, manualCounter = 0, newRegistration;
+		path = Document.current.dir ++ "/Registrations.scd";
+		registrationPresets = path.load;
+		newRegistration = []!evt.buttons.size;
+		registrationPresets[preset].size.do { |index|
+			if(index < newRegistration.size) {
+				newRegistration[index] = registrationPresets[preset][index];
+			}
+		};
+		evt.buttons.keysValuesDo({
+			arg manual, buttons;
+			newRegistration[manualCounter] = Array.new(~bo.registers.size);
+			evt.buttons[manual].keysValuesDo({
+				arg index, button;
+				newRegistration[manualCounter].add(button.value);
+			});
+			manualCounter = manualCounter + 1;
+		});
+		registrationPresets[preset] = newRegistration;
+		registrationsFile = File(path,"w");
+		registrationsFile.write(registrationPresets.asCompileString);
+		registrationsFile.close;
+	};
+
+	// function to load the registration
+	fLoadRegistration = {
+		arg preset, emptyCheckOnly = false;
+		var registrationPresets, registrationsFile, path, manualCounter = 0, registrationEmpty = true;
+		path = Document.current.dir ++ "/Registrations.scd";
+		if(File.exists(path).not, {
+			registrationsFile = File(path,"w");
+			registrationsFile.write("[ [], [], [], [], [], [], [], [], [], [] ]");
+			registrationsFile.close;
+		});
+		registrationPresets = path.load;
+		registrationPresets[preset].do { |manual|
+			manual.do { |registration|
+				if(registration !== 0, { registrationEmpty = false });
+			};
+		};
+		if(registrationEmpty, { ~bo.presetButton[preset].border_(1) }, { ~bo.presetButton[preset].border_(2) });
+		if(registrationEmpty.not && emptyCheckOnly.not, {
+			evt.buttons.keysValuesDo({
+				arg manual, buttons;
+				var buttonCounter = 0;
+				if(registrationPresets[preset].size > manualCounter, {
+					evt.buttons[manual].keysValuesDo({
+						arg index, button;
+						button.valueAction = registrationPresets[preset][manualCounter][buttonCounter];
+						buttonCounter = buttonCounter + 1;
+					});
+				});
+				manualCounter = manualCounter + 1;
+			});
+		});
+	};
+
+	win.view.keyDownAction_({
+		arg view, char, modifiers, unicode, keycode;
+		var numberKeys = [18, 19, 20, 21, 23, 22, 26, 28, 25, 29], numberPressed;
+		// Esc stops all notes
+		if(keycode == 53, { buttonStop.valueAction_(1) });
+		// Alt-O toggles OSC out monitor
+		if(keycode == 31 && modifiers.isAlt, {
+			buttonOSC.valueAction_((buttonOSC.value + 1)%2);
+		});
+		// Alt-S saves preset
+		if(keycode == 1 && modifiers.isAlt, {
+			buttonSaveRegs.valueAction_(1);
+		});
+		// Alt-C clears preset
+		if(keycode == 8 && modifiers.isAlt, {
+			buttonClearRegs.valueAction_(1);
+		});
+		// Number keys select presets
+		numberPressed = numberKeys.indexOf(keycode);
+		if(numberPressed.notNil, {
+			~bo.presetButton[numberPressed].value_(0);
+			~bo.presetButton[numberPressed].valueAction_(1);
+		})
+	});
+
+	win.onClose = {
+		buttonStop.valueAction_(1);
+		buttonClearRegs.valueAction_(1);
+		buttonStopClock.clear;
+		buttonClearRegsClock.clear;
+	};
+
+	// initialize
+	9.do { |i|
+		fLoadRegistration.value(i+1, true); // just set the state of the preset buttons
+	};
+	~bo.presetButton[0].valueAction_(1); // select the first preset
+	cView.focus(true);
+	win;
+};
+~bo.makeWindow;
