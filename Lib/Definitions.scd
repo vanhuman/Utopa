@@ -49,35 +49,38 @@
 	~bo.registersByNumber[value] = key;
 };
 
-~bo.regRanges = ( // min, max, exceptions[]
-	// not sounding from 86 - 92
-	36: [ 36, 92, [ ] ],
-	37: [ 36, 92 ],
-	38: [ 36, 92 ],
-	39: [ 36, 92 ], // 92 one note too high!
-	40: [ 36, 92 ],
-	41: [ 36, 92 ],
-	42: [ 36, 92 ],
-	43: [ 36, 92 ],
-	44: [ 36, 92 ],
-	45: [ 36, 92 ], // 88-92 not sounding
-	46: [ 59, 92 ],
-	47: [ 36, 92 ],
-	48: [ 36, 92 ], // 92 not sounding
+~bo.layersPerManual = (0: 0, 1: 0, 2: 0, 3: 0);
 
-	49: [ 36, 92 ],
-	50: [ 36, 92 ],
-	51: [ 56, 92 ],
-	52: [ 36, 92 ],
-	53: [ 36, 92 ],
-	54: [ 36, 92 ],
-	55: [ 36, 92 ],
-	56: [ 36, 92 ],
-	57: [ 36, 92 ], // really to 90?
-	58: [ 36, 92 ],
-	59: [ 36, 92 ],
-	60: [ 36, 92 ],
-	61: [ 36, 92 ],
+
+~bo.upperRange = 85; // not sounding from 86 - 92
+~bo.regRanges = ( // min, max, exceptions[]
+	36: [ 36, ~bo.upperRange ],
+	37: [ 36, ~bo.upperRange ],
+	38: [ 36, ~bo.upperRange ],
+	39: [ 36, ~bo.upperRange ],
+	40: [ 36, ~bo.upperRange ],
+	41: [ 36, ~bo.upperRange ],
+	42: [ 36, ~bo.upperRange ],
+	43: [ 36, ~bo.upperRange ],
+	44: [ 36, ~bo.upperRange ],
+	45: [ 36, ~bo.upperRange ],
+	46: [ 59, ~bo.upperRange ],
+	47: [ 36, ~bo.upperRange ],
+	48: [ 36, ~bo.upperRange ],
+
+	49: [ 36, ~bo.upperRange ],
+	50: [ 36, ~bo.upperRange ],
+	51: [ 56, ~bo.upperRange ],
+	52: [ 36, ~bo.upperRange ],
+	53: [ 36, ~bo.upperRange ],
+	54: [ 36, ~bo.upperRange ],
+	55: [ 36, ~bo.upperRange ],
+	56: [ 36, ~bo.upperRange ],
+	57: [ 36, ~bo.upperRange ],
+	58: [ 36, ~bo.upperRange ],
+	59: [ 36, ~bo.upperRange ],
+	60: [ 36, ~bo.upperRange ],
+	61: [ 36, ~bo.upperRange ],
 
 	62: [ 36, 66 ],
 	63: [ 36, 66 ],
@@ -104,8 +107,7 @@
 ~bo.clearAll = {
 	MIDIdef.freeAll;
 	NetAddr.disconnectAll;
-	HID.closeAll;
-	~bo = EM();
+	~bo = nil;
 };
 
 ~bo.chanLayer = {
@@ -120,7 +122,7 @@
 	// layer: integer or null (all layers)
 	arg evt, chan, layer, notes, val;
 	var force = (val / 127).round(0.001);
-	evt.outOfRangeCheck(chan, layer, notes, val);
+	// evt.outOfRangeCheck(chan, layer, notes, val);
 	notes = notes + ~bo.noteOffset;
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/V", force, *notes);
 };
@@ -159,7 +161,7 @@
 	arg evt, chan, layer, regs, clear = true;
 	if(regs.isArray.not, { regs = [regs] });
 	if(clear, { regs = [0] ++ regs }); // clear all active registers
-	evt.regStore(chan, layer, regs);
+	// evt.regStore(chan, layer, regs);
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/S", *regs);
 };
 
@@ -221,22 +223,17 @@
 	arg evt, chans, layers;
 	if(chans.isNil, { chans = [~bo.ped, ~bo.man1, ~bo.man2, ~bo.man3] });
 	if(chans.isArray.not, { chans = [chans] });
-	if(layers.isNil, {
-		chans.do { |chan|
+	if(layers.notNil and: { layers.isArray.not }, { layers = [layers] });
+	chans.do { |chan|
+		var layersTemp = if(layers.notNil, { layers }, { Array.series(evt.layersPerManual[chan], 1, 1) });
+		if(layersTemp == 0, { layersTemp = (1..4) });
+		("Stopping all notes on manual" + chan + ", layer(s)" + layersTemp.toString).warn;
+		layersTemp.do { |layer|
 			127.do { |note|
-				~bo.note(chan, nil, note, 0);
+				~bo.note(chan, layer, note, 0);
 			};
 		};
-	}, {
-		if(layers.isArray.not, { layers = [layers] });
-		chans.do { |chan|
-			layers.do { |layer|
-				127.do { |note|
-					~bo.note(chan, layer, note, 0);
-				};
-			}
-		};
-	});
+	};
 };
 
 ~bo.notify = {

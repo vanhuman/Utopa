@@ -25,11 +25,6 @@ if(~bo.notNil, { ~bo.clearAll() });
 
 
 
-
-
-
-
-
 // ------------ Live Coding ------------
 
 ~bo.clearAll();

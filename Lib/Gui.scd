@@ -5,13 +5,14 @@
 ~bo.makeWindow = { |evt|
 	var win, fView, cView, buttonStop, buttonOSC, fSaveRegistration, fLoadRegistration, selectedPreset = 0;
 	var buttonClearRegs, buttonClearRegsClock, buttonStopClock, buttonSaveRegs;
-	var cellWidth = 135, cellHeight = 14, winHeight = 755, winWidth = (cellWidth + 20) * 13, buttonWidth = cellWidth* 1.05;
+	var numberOfLayers = 10;
+	var cellWidth = 135, cellHeight = 14, winHeight = 755, winWidth = (cellWidth + 20) * numberOfLayers, buttonWidth = cellWidth* 1.05;
 	var font = Font("Courier", 11), bigFont = Font("Courier", 13);
 	var titleColor = Color.blue(1, 0.1), buttonColor = Color.blue, manualColor = Color.blue(1,0.3);
 
 	evt.w = win = Window( "Baroque Organ Register Board", Rect(0, 1000, winWidth, winHeight), scroll: true).background_(Color.grey).front;
 	win.addFlowLayout;
-	cView = CompositeView(evt.w, (winWidth - 100) @ 50).background_(Color.white);
+	cView = CompositeView(evt.w, (winWidth - 80) @ 50).background_(Color.white);
 	cView.addFlowLayout;
 
 	// Title
@@ -91,6 +92,7 @@
 	fView = {
 		arg title, chan, layer, color = titleColor, delay = false, notesButtons = Array.newClear(7);
 		var cView, buttons = OEM(), halfWidth = cellWidth;
+		evt.layersPerManual[chan] = evt.layersPerManual[chan] + 1;
 		cView = CompositeView(evt.w, (cellWidth + 8) @ (winHeight - 62)).background_(Color.white);
 		cView.addFlowLayout;
 		// Title
@@ -170,9 +172,9 @@
 	evt.buttons.m32 = fView.value("Layer 2", ~bo.man3, 2, delay: true);
 	evt.buttons.m33 = fView.value("Layer 3", ~bo.man3, 3, delay: true);
 	evt.buttons.m34 = fView.value("Layer 4", ~bo.man3, 4, delay: true);
-	evt.buttons.m35 = fView.value("Layer 5", ~bo.man3, 5, delay: true);
-	evt.buttons.m36 = fView.value("Layer 6", ~bo.man3, 6, delay: true);
-	evt.buttons.m37 = fView.value("Layer 7", ~bo.man3, 7, delay: true);
+	// evt.buttons.m35 = fView.value("Layer 5", ~bo.man3, 5, delay: true);
+	// evt.buttons.m36 = fView.value("Layer 6", ~bo.man3, 6, delay: true);
+	// evt.buttons.m37 = fView.value("Layer 7", ~bo.man3, 7, delay: true);
 
 	// Function to save the registration into a preset
 	fSaveRegistration = {

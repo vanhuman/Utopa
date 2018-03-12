@@ -41,8 +41,8 @@ MIDIdef.cc(\secondLawCC1icon, { // fader to retrigger one specific note with dif
 
 // ------------ incoming channel 4 to Manual III all layers for delay ------------
 
-~bo.delayOnTimes = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01] * 10;
-~bo.delayOffTimes = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01] * 10;
+~bo.delayOnTimes = [0.1, 0.1, 0.1];
+~bo.delayOffTimes = [0.1, 0.1, 0.1];
 ~bo.delayMan = ~bo.man3;
 MIDIdef.noteOn(\secondLawNON4, {
 	arg val, num, chan, src;
@@ -56,12 +56,6 @@ MIDIdef.noteOn(\secondLawNON4, {
 		~bo.note(~bo.delayMan, 3, num, val);
 		~bo.delayOnTimes[2].wait;
 		~bo.note(~bo.delayMan, 4, num, val);
-		~bo.delayOnTimes[3].wait;
-		~bo.note(~bo.delayMan, 5, num, val);
-		~bo.delayOnTimes[4].wait;
-		~bo.note(~bo.delayMan, 6, num, val);
-		~bo.delayOnTimes[5].wait;
-		~bo.note(~bo.delayMan, 7, num, val);
 	});
 	task.start;
 }, chan: [3], srcID: ~bo.iac1ID
@@ -78,12 +72,6 @@ MIDIdef.noteOff(\secondLawNOF4, {
 		~bo.note(~bo.delayMan, 3, num, 0);
 		~bo.delayOffTimes[2].wait;
 		~bo.note(~bo.delayMan, 4, num, 0);
-		~bo.delayOffTimes[3].wait;
-		~bo.note(~bo.delayMan, 5, num, 0);
-		~bo.delayOffTimes[4].wait;
-		~bo.note(~bo.delayMan, 6, num, 0);
-		~bo.delayOffTimes[5].wait;
-		~bo.note(~bo.delayMan, 7, num, 0);
 	});
 	task.start;
 }, chan: [3], srcID: ~bo.iac1ID
@@ -180,11 +168,24 @@ MIDIdef.cc(\secondLawCC25icon, { // fader to set velocity of repeating notes
 
 // ------------ incoming channel 16 for control messages ------------
 MIDIdef.noteOn(\secondLawNON16, {
-	// midi notes 0 - 8 for preset selection
+	// midi notes 0 - 9 for preset selection
 	arg val, num, chan, src;
 	// ["NON16", chan, num, val].postln;
-	if(num < 9, {
+	if(num < 10, {
 		~bo.presetButton[num].valueAction_(1);
+	});
+	if( [0, 1].indexOf(num).notNil, {
+		"Delay switched ON".warn;
+		~bo.delayOnTimes = [0.1, 0.1, 0.1];
+		~bo.delayOffTimes = [0.1, 0.1, 0.1];
+	});
+	if( (2..9).indexOf(num).notNil, {
+		"Delay switched OFF".warn;
+		~bo.delayOnTimes = [0, 0, 0];
+		~bo.delayOffTimes = [0, 0, 0];
+	});
+	if(num == 12, {
+		~bo.panic();
 	});
 }, chan: [15], srcID: ~bo.iac1ID
 ).fix;
