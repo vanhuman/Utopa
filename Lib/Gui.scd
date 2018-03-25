@@ -1,32 +1,40 @@
 // ------------ GUI ------------
-
+(
 ~bo.presetButton = Array.newClear(10);
 
 ~bo.makeWindow = { |evt|
 	var win, fView, cView, buttonStop, buttonOSC, fSaveRegistration, fLoadRegistration, selectedPreset = 0;
 	var buttonClearRegs, buttonClearRegsClock, buttonStopClock, buttonSaveRegs;
-	var numberOfLayers = 10;
+	var numberOfLayers = 13;
 	var cellWidth = 135, cellHeight = 14, winHeight = 755, winWidth = (cellWidth + 20) * numberOfLayers, buttonWidth = cellWidth* 1.05;
 	var font = Font("Courier", 11), bigFont = Font("Courier", 13);
 	var titleColor = Color.blue(1, 0.1), buttonColor = Color.blue, manualColor = Color.blue(1,0.3);
 
 	evt.w = win = Window( "Baroque Organ Register Board", Rect(0, 1000, winWidth, winHeight), scroll: true).background_(Color.grey).front;
 	win.addFlowLayout;
-	cView = CompositeView(evt.w, (winWidth - 80) @ 50).background_(Color.white);
+	cView = CompositeView(evt.w, (winWidth - 100) @ 50).background_(Color.white);
 	cView.addFlowLayout;
 
-	// Title
-	StaticText(cView, buttonWidth @ (cellHeight*2)).string_("BAROQUE ORGAN").font_(bigFont).align_(\center);
-	StaticText(cView, buttonWidth @ (cellHeight*2)).string_("REGISTER BOARD").font_(bigFont).align_(\center);
-
-	// Stop all notes
+	// Panic: stop all notes and close all registers
 	buttonStop = SmoothButton(cView, buttonWidth @ (cellHeight*2))
 	.radius_(2).border_(1).canFocus_(false).font_(font)
-	.states_( [ ["STOP ALL NOTES", Color.red, Color.white], ["STOP ALL NOTES", Color.white, Color.red] ] )
+	.states_( [ ["PANIC (notes&stops)", Color.red, Color.white], ["PANIC (notes&stops)", Color.white, Color.red] ] )
 	.action_({ |bt|
 		if(bt.value == 1, {
+			"PANIC".warn;
 			evt.panic();
-			buttonStopClock = AppClock.sched(0.1, { bt.value = 0 });
+			buttonStopClock = AppClock.sched(1, {
+				bt.value = 0;
+				"Create extra layers".postln;
+				Task.new({
+					evt.addLayer(3);
+					0.01.wait;
+					evt.addLayer(3);
+					0.01.wait;
+					evt.addLayer(3);
+				}).start;
+				nil
+			});
 		});
 	});
 
@@ -43,7 +51,7 @@
 					button.valueAction_(0);
 				});
 			});
-			buttonClearRegsClock = AppClock.sched(0.1, { bt.value = 0 });
+			buttonClearRegsClock = AppClock.sched(0.1, { bt.value = 0; nil });
 		});
 	});
 
@@ -69,19 +77,35 @@
 	});
 	buttonOSC.value = ~oscOutMonitor ? 0;
 
+	// SCdelay
+	evt.buttonScDelay = SmoothButton(cView, buttonWidth @ (cellHeight*2))
+	.radius_(2).border_(1).canFocus_(false).font_(font)
+	.states_( [ ["SC delay OFF", Color.black, Color.white], ["SC delay ON", Color.white, buttonColor] ] )
+	.action_({ |bt|
+		if(bt.value == 1, {
+			evt.scDelay(true);
+			"Delay switched ON".warn;
+			}, {
+				evt.scDelay(false);
+				"Delay switched OFF".warn;
+		});
+		evt.delayOnTimes.postln;
+	});
+	evt.buttonScDelay.value = if(evt.scDelayOn, { 1 }, { 0 });
+
 	// Empty row
 	StaticText(cView, (buttonWidth*0.2) @ (cellHeight*2)).string_("").font_(bigFont).align_(\center);
 
 	// registration preset buttons
 	10.do { |index|
-		~bo.presetButton[index] = SmoothButton(cView, (cellHeight*2) @ (cellHeight*2))
+		evt.presetButton[index] = SmoothButton(cView, (cellHeight*2) @ (cellHeight*2))
 		.radius_(2).border_(1).canFocus_(false).font_(font)
 		.states_( [ [(index+1).asString, Color.black, Color.white], [(index+1).asString, Color.white, buttonColor] ] )
 		.action_({ |button|
 			button.value = 1;
 			selectedPreset = index;
 			// switch off all other buttons
-			~bo.presetButton.do { |b, i|
+			evt.presetButton.do { |b, i|
 				if(i !== index, { b.value = 0 });
 			};
 			fLoadRegistration.value(index);
@@ -113,7 +137,7 @@
 			.radius_(2).border_(1).canFocus_(false).font_(font)
 			.states_( [ [note.asString, buttonColor, Color.white], [note.asString, Color.white, buttonColor] ] )
 			.action_({ |bt|
-				~bo.note(chan, layer, note, 127 * bt.value);
+				evt.note(chan, layer, note, 127 * bt.value);
 			});
 		};
 		// Stop all notes
@@ -122,7 +146,7 @@
 		.states_( [ ["Stop all notes", buttonColor, Color.white], ["Stop all notes", Color.white, buttonColor] ] )
 		.action_({ |bt|
 			if(bt.value == 1, {
-				evt.panic(chan, layer);
+				evt.stopAllNotes(chan, layer);
 				7.do { |i|
 					notesButtons[i].value = 0;
 				};
@@ -150,6 +174,12 @@
 				.radius_(2).border_(1).canFocus_(false).font_(font)
 				.states_( [ [key.asString, Color.black, Color.white], [key.asString, Color.white, buttonColor] ] )
 				.action_({ |bt|
+					// {
+					// 	switch( bt.value,
+					// 		1, { evt.regAdd(chan, layer, value) },
+					// 		0, { evt.regAdd(chan, layer, value.neg ) }
+					// 	);
+					// }.defer( rrand(2, 10) + ((5*(value - 36)) + (3*chan) + (2*layer)) / 3000 );
 					switch( bt.value,
 						1, { evt.regAdd(chan, layer, value) },
 						0, { evt.regAdd(chan, layer, value.neg ) }
@@ -162,19 +192,19 @@
 
 	// layer lanes
 	evt.buttons = OEM();
-	evt.buttons.p = fView.value("Pedals - Layer 1", ~bo.ped, 1, manualColor);
-	evt.buttons.m1 = fView.value("Manual I - Layer 1", ~bo.man1, 1, manualColor);
-	evt.buttons.m21 = fView.value("Manual II - Layer 1", ~bo.man2, 1, manualColor);
-	evt.buttons.m22 = fView.value("Layer 2", ~bo.man2, 2);
-	evt.buttons.m23 = fView.value("Layer 3", ~bo.man2, 3);
-	evt.buttons.m24 = fView.value("Layer 4", ~bo.man2, 4);
-	evt.buttons.m31 = fView.value("Manual III - Layer 1", ~bo.man3, 1, manualColor);
-	evt.buttons.m32 = fView.value("Layer 2", ~bo.man3, 2, delay: true);
-	evt.buttons.m33 = fView.value("Layer 3", ~bo.man3, 3, delay: true);
-	evt.buttons.m34 = fView.value("Layer 4", ~bo.man3, 4, delay: true);
-	// evt.buttons.m35 = fView.value("Layer 5", ~bo.man3, 5, delay: true);
-	// evt.buttons.m36 = fView.value("Layer 6", ~bo.man3, 6, delay: true);
-	// evt.buttons.m37 = fView.value("Layer 7", ~bo.man3, 7, delay: true);
+	evt.buttons.p = fView.value("Pedals - Layer 1", evt.ped, 1, manualColor);
+	evt.buttons.m1 = fView.value("Manual I - Layer 1", evt.man1, 1, manualColor);
+	evt.buttons.m21 = fView.value("Manual II - Layer 1", evt.man2, 1, manualColor);
+	evt.buttons.m22 = fView.value("Layer 2", evt.man2, 2);
+	evt.buttons.m23 = fView.value("Layer 3", evt.man2, 3);
+	evt.buttons.m24 = fView.value("Layer 4", evt.man2, 4);
+	evt.buttons.m31 = fView.value("Manual III - Layer 1", evt.man3, 1, manualColor);
+	evt.buttons.m32 = fView.value("Layer 2", evt.man3, 2, delay: true);
+	evt.buttons.m33 = fView.value("Layer 3", evt.man3, 3, delay: true);
+	evt.buttons.m34 = fView.value("Layer 4", evt.man3, 4, delay: true);
+	evt.buttons.m35 = fView.value("Layer 5", evt.man3, 5, delay: true);
+	evt.buttons.m36 = fView.value("Layer 6", evt.man3, 6, delay: true);
+	evt.buttons.m37 = fView.value("Layer 7", evt.man3, 7, delay: true);
 
 	// Function to save the registration into a preset
 	fSaveRegistration = {
@@ -190,7 +220,7 @@
 		};
 		evt.buttons.keysValuesDo({
 			arg manual, buttons;
-			newRegistration[manualCounter] = Array.new(~bo.registers.size);
+			newRegistration[manualCounter] = Array.new(evt.registers.size);
 			evt.buttons[manual].keysValuesDo({
 				arg index, button;
 				newRegistration[manualCounter].add(button.value);
@@ -219,7 +249,7 @@
 				if(registration !== 0, { registrationEmpty = false });
 			};
 		};
-		if(registrationEmpty, { ~bo.presetButton[preset].border_(1) }, { ~bo.presetButton[preset].border_(2) });
+		if(registrationEmpty, { evt.presetButton[preset].border_(1) }, { evt.presetButton[preset].border_(2) });
 		if(registrationEmpty.not && emptyCheckOnly.not, {
 			evt.buttons.keysValuesDo({
 				arg manual, buttons;
@@ -239,8 +269,12 @@
 	win.view.keyDownAction_({
 		arg view, char, modifiers, unicode, keycode;
 		var numberKeys = [18, 19, 20, 21, 23, 22, 26, 28, 25, 29], numberPressed;
+		// keycode.postln;
 		// Esc stops all notes
-		if(keycode == 53, { buttonStop.valueAction_(1) });
+		if(keycode == 53, {
+			buttonStop.valueAction_(1);
+			buttonClearRegs.valueAction_(1);
+		});
 		// Alt-O toggles OSC out monitor
 		if(keycode == 31 && modifiers.isAlt, {
 			buttonOSC.valueAction_((buttonOSC.value + 1)%2);
@@ -253,27 +287,31 @@
 		if(keycode == 8 && modifiers.isAlt, {
 			buttonClearRegs.valueAction_(1);
 		});
+		// Alt-D switched SuperCollider delay on/off
+		if(keycode == 2 && modifiers.isAlt, {
+			evt.buttonScDelay.valueAction_((evt.buttonScDelay.value + 1)%2);
+		});
 		// Number keys select presets
 		numberPressed = numberKeys.indexOf(keycode);
 		if(numberPressed.notNil, {
-			~bo.presetButton[numberPressed].value_(0);
-			~bo.presetButton[numberPressed].valueAction_(1);
+			evt.presetButton[numberPressed].value_(0);
+			evt.presetButton[numberPressed].valueAction_(1);
 		})
 	});
 
 	win.onClose = {
-		buttonStop.valueAction_(1);
-		buttonClearRegs.valueAction_(1);
-		buttonStopClock.clear;
-		buttonClearRegsClock.clear;
+		// buttonStop.valueAction_(1);
+		// buttonStopClock.clear;
 	};
 
 	// initialize
-	9.do { |i|
-		fLoadRegistration.value(i+1, true); // just set the state of the preset buttons
+	10.do { |i|
+		fLoadRegistration.value(i, true); // just set the state of the preset buttons
 	};
-	~bo.presetButton[0].valueAction_(1); // select the first preset
+	// evt.presetButton[0].valueAction_(1); // select the first preset
+	buttonStop.valueAction_(1);
 	cView.focus(true);
 	win;
 };
 ~bo.makeWindow;
+)

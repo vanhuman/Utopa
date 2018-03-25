@@ -45,12 +45,13 @@
 );
 
 ~bo.registersByNumber = ();
+~bo.notesPerRegister = ();
 ~bo.registers.keysValuesDo { |key, value|
 	~bo.registersByNumber[value] = key;
+	~bo.notesPerRegister[value] = Array.newClear(127);
 };
 
 ~bo.layersPerManual = (0: 0, 1: 0, 2: 0, 3: 0);
-
 
 ~bo.upperRange = 85; // not sounding from 86 - 92
 ~bo.regRanges = ( // min, max, exceptions[]
@@ -99,7 +100,6 @@
 		~bo.registrationsPerLayer[chan][layer] = Array.new(~bo.registers.size);
 	};
 };
-
 ~bo.notifyCount = 0;
 
 // functions ------------------------------------
@@ -123,8 +123,30 @@
 	arg evt, chan, layer, notes, val;
 	var force = (val / 127).round(0.001);
 	// evt.outOfRangeCheck(chan, layer, notes, val);
+	// evt.checkMultipleNotesPerRegister(chan, layer, notes, val);
+	// to enable the two lines above, also uncomment the line with 'evt.regStore(chan, layer, regs)' in the function ~bo.reg
 	notes = notes + ~bo.noteOffset;
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/V", force, *notes);
+};
+
+~bo.checkMultipleNotesPerRegister = {
+	arg evt, chan, layer, notes, val;
+	evt.notify("Multiple Notes Per Register Check is ON");
+	if(notes.isArray.not, { notes = [notes] });
+	evt.registrationsPerLayer[chan][layer].do { |reg|
+		notes.do { |note|
+			if(val > 0, {
+				if(evt.notesPerRegister[reg][note] == 1, {
+					format("Note % plays more than once on M %, L %, S %", note, chan, layer, reg).warn;
+				});
+				evt.notesPerRegister[reg][note] = 1;
+				// format("Note % plays on M %, L %, S %", note, chan, layer, reg).postln;
+			}, {
+				evt.notesPerRegister[reg][note] = nil;
+				// format("Note % stopped on M %, L %, S %", note, chan, layer, reg).postln;
+			});
+		};
+	};
 };
 
 ~bo.outOfRangeCheck = {
@@ -155,10 +177,16 @@
 	evt.note(chan, nil, notes, val);
 };
 
+~bo.addLayer = {
+	arg evt, chan;
+	evt.addr.sendMsg("/M" ++ chan ++ "/createLayer");
+};
+
 ~bo.reg = {
 	// set absolute registers, or relative if clear is false
 	// regs: integer or integer[], a negative number meaning 'remove stop'
 	arg evt, chan, layer, regs, clear = true;
+	if(regs.isNil, { regs = [ ] });
 	if(regs.isArray.not, { regs = [regs] });
 	if(clear, { regs = [0] ++ regs }); // clear all active registers
 	// evt.regStore(chan, layer, regs);
@@ -166,18 +194,18 @@
 };
 
 ~bo.regStore = {
-	// store registers per layer to check for out of range when triggering a note
+	// store registers per layer to check for out of range or multiple notes on a register when triggering a note
 	arg evt, chan, layer, regs;
 	evt.notify("Store Registers is ON");
 	regs.do { |reg|
+		var index = ~bo.registrationsPerLayer[chan][layer].indexOf(reg.abs);
 		if(reg == 0, {
 			~bo.registrationsPerLayer[chan][layer] = [ ];
 		});
 		if(reg > 0, {
-			~bo.registrationsPerLayer[chan][layer].add(reg);
+			if(index.isNil, { ~bo.registrationsPerLayer[chan][layer].add(reg) });
 		});
 		if(reg < 0, {
-			var index = ~bo.registrationsPerLayer[chan][layer].indexOf(reg.abs);
 			if(index.notNil, { ~bo.registrationsPerLayer[chan][layer].removeAt(index) });
 		});
 	};
@@ -214,24 +242,56 @@
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/delay", amount.asString, onOff);
 };
 
+~bo.scDelayOn = true;
+~bo.scDelay = {
+	arg evt, switch;
+	if(switch, {
+		evt.scDelayOn = true;
+		evt.delayOnTimes = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
+		evt.delayOffTimes = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
+	}, {
+		evt.scDelayOn = false;
+		evt.delayOnTimes = [0, 0, 0, 0, 0, 0];
+		evt.delayOffTimes = [0, 0, 0, 0, 0, 0];
+	});
+};
+
 ~bo.transpose = {
 	arg evt, chan, layer, semitones;
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/transpose", semitones);
 };
 
 ~bo.panic = {
+	arg evt;
+	evt.addr.sendMsg("/panic");
+};
+
+~bo.stopAllNotes = {
 	arg evt, chans, layers;
-	if(chans.isNil, { chans = [~bo.ped, ~bo.man1, ~bo.man2, ~bo.man3] });
+	if(chans.isNil, { chans = [evt.ped, evt.man1, evt.man2, evt.man3] });
 	if(chans.isArray.not, { chans = [chans] });
 	if(layers.notNil and: { layers.isArray.not }, { layers = [layers] });
 	chans.do { |chan|
 		var layersTemp = if(layers.notNil, { layers }, { Array.series(evt.layersPerManual[chan], 1, 1) });
-		if(layersTemp == 0, { layersTemp = (1..4) });
+		if(layersTemp.size == 0, { layersTemp = (1..4) });
 		("Stopping all notes on manual" + chan + ", layer(s)" + layersTemp.toString).warn;
 		layersTemp.do { |layer|
 			127.do { |note|
-				~bo.note(chan, layer, note, 0);
+				evt.note(chan, layer, note, 0);
 			};
+		};
+	};
+};
+
+~bo.clearAllRegs = {
+	arg evt;
+	var chans = [evt.ped, evt.man1, evt.man2, evt.man3];
+	var layers;
+	chans.do { |chan|
+		layers = Array.series(evt.layersPerManual[chan], 1, 1);
+		if(layers.size == 0, { layers = (1..4) });
+		layers.do { |layer|
+			evt.reg(chan, layer);
 		};
 	};
 };
@@ -239,7 +299,7 @@
 ~bo.notify = {
 	arg evt, msg;
 	evt.notifyCount = evt.notifyCount + 1;
-	if(evt.notifyCount > 40, {
+	if(evt.notifyCount > 700, {
 		msg.warn;
 		evt.notifyCount = 0;
 	});

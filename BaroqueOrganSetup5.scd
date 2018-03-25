@@ -1,5 +1,7 @@
 (
 
+// MOTU volume -15db
+
 // ------------ Setup environment ------------
 // connect with DHCP to server 192.168.0.60
 
@@ -7,8 +9,11 @@ if(~bo.notNil, { ~bo.clearAll() });
 
 ~bo = EM(); // functions in an EM always have the environment as first argument
 
+~bo.addr = NetAddr.new("192.168.0.1", 1803);
 // ~bo.addr = NetAddrMon.new("192.168.0.1", 1803);
-~bo.addr = NetAddrMon.new("127.0.0.1", 8000);
+
+// ~bo.addr = NetAddrMon.new("127.0.0.1", 8000);
+
 ~bo.noteOffset = 0;
 ~bo.chanOffset = 0;
 
@@ -23,6 +28,75 @@ if(~bo.notNil, { ~bo.clearAll() });
 
 )
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+MIDIIn.doNoteOnAction(~bo.iac1ID, 15, 1, 27); // spoof a note on
+
+
+
+/*
+
+-1 5bpm 0 245 1 5
+~bo.addr.sendMsg("/M1/L1/PulseFreq", 0.92, "on");
+~bo.addr.sendMsg("/M1/L1/PulseWidth", 0.35);
+
+~bo.addr.sendMsg("/M1/L1/PulseFreq", 0.92, "off");
+
+~bo.addr.sendMsg("/SP0", 1.0);
+
+b.sendMsg("/M2/createLayer");
+
+// /TremHW or /TremOW
+
+b.sendMsg("/TremOW"); // toggle
+
+b.sendMsg("/TremOW", "on"); // (or "true", if you like)
+b.sendMsg("/TremOW", "off"); // (or "false")
+
+b.sendMsg("/TremOW", "200ms"); // frequency
+b.sendMsg("/TremOW", "100bpm"); // bpm
+b.sendMsg("/TremOW", "68%"); // pulse width
+b.sendMsg("/TremOW", 0.68); // pulse width
+
+b.sendMsg("/TremOW", "on", "30%", "100ms");
+b.sendMsg("/TremOW", "false", 0.7, "200bpm");
+
+
+Layer properties are all set with one float 0.0 .. 1.0 plus a String "on" (use any other string to turn them off)
+some accept int's as stated.
+b.sendMsg("/M2/L1/VelMin", 0.2, "on");
+b.sendMsg("/M2/L1/VelMax", 0.2, "on"); //only notes between these velocities will be accepted
+b.sendMsg("/M2/L1/Transpose", 12, "on"); // int = semitones
+b.sendMsg("/M2/L1/Left", 0.2, "on");
+b.sendMsg("/M2/L1/Right", 0.2, "on"); //only notes between these pitches will be accepted
+b.sendMsg("/M2/L1/Delay", 2, "on"); // int = milliseconds
+b.sendMsg("/M2/L1/Staccato", 25, "on"); // int = milliseconds
+b.sendMsg("/M2/L1/Prolong", 0.2, "on"); // int = milliseconds
+b.sendMsg("/M2/L1/PulseFreq", 0.0, "on"); // -1.0=5bpm, 1.0=5ms, 0.0=245bpm(mostly the same as 245ms). will change to tremulants behaviour later.
+b.sendMsg("/M2/L1/PulseWidth", 0.2, "on");
+b.sendMsg("/M2/L1/Sostenuto", 0.2, "on"); // sorry, I lost this one in the classical namespace for now... notes with velocity above this value will clear all, lower will toggle notes
+looking for Sustain? see Sostenuto ;-)
+b.sendMsg("/M2/L1/Midi", 0, "on"); // int = channel, 0=off
+b.sendMsg("/M2/L1/DynWidth", 0.2, "on");//not yet ready, will set the width of the dynamic range (for magnet speed)
+b.sendMsg("/M2/L1/DynCenter", 0.2, "on");//not yet ready, will set the center of that range (for magnet speed)
+why this? -> set the width to 0.0, and you can "move" active magnets all at once by altering the center value.
+b.sendMsg("/M2/createLayer");
+
+b.sendMsg("/panic");
+
+*/
 
 
 // ------------ Live Coding ------------
