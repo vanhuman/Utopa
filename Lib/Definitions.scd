@@ -53,7 +53,6 @@
 
 ~bo.layersPerManual = (0: 0, 1: 0, 2: 0, 3: 0);
 
-~bo.upperRange = 85; // not sounding from 86 - 92
 ~bo.regRanges = ( // min, max, exceptions[]
 	36: [ 36, ~bo.upperRange ],
 	37: [ 36, ~bo.upperRange ],

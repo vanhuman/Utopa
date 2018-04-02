@@ -9,22 +9,23 @@ if(~bo.notNil, { ~bo.clearAll() });
 
 ~bo = EM(); // functions in an EM always have the environment as first argument
 
-~bo.addr = NetAddr.new("192.168.0.1", 1803);
+// ~bo.addr = NetAddr.new("192.168.0.1", 1803);
 // ~bo.addr = NetAddrMon.new("192.168.0.1", 1803);
 
-// ~bo.addr = NetAddrMon.new("127.0.0.1", 8000);
+~bo.addr = NetAddrMon.new("127.0.0.1", 8000);
 
 ~bo.noteOffset = 0;
 ~bo.chanOffset = 0;
+~bo.upperRange = 85; // not sounding from 86 - 92
 
 // setup of the basic functions
-(Document.current.dir ++ "/Lib/Definitions.scd").load();
+(Document.dir ++ "KP6-3.7/Lib/Definitions.scd").load();
 
 // MIDI re-routing and some specific MIDI processing functions
-(Document.current.dir ++ "/Lib/MidiSetup.scd").load();
+// (Document.dir ++ "KP6-3.7/Lib/MidiSetup.scd").load();
 
 // register board
-(Document.current.dir ++ "/Lib/Gui.scd").load();
+(Document.dir ++ "KP6-3.7/Lib/Gui.scd").load();
 
 )
 
@@ -35,14 +36,7 @@ if(~bo.notNil, { ~bo.clearAll() });
 
 
 
-
-
-
-
-
-
-
-MIDIIn.doNoteOnAction(~bo.iac1ID, 15, 1, 27); // spoof a note on
+// MIDIIn.doNoteOnAction(~bo.iac1ID, 15, 1, 27); // spoof a note on
 
 
 
@@ -98,7 +92,7 @@ b.sendMsg("/panic");
 
 */
 
-
+/*
 // ------------ Live Coding ------------
 
 ~bo.clearAll();
@@ -181,7 +175,7 @@ een noot heeft een velocity curve met een attack; bij het nogmaals sturen van de
 )
 ~bo.note(2, nil, 60, 0); // stop note
 
-
+*/
 
 
 
