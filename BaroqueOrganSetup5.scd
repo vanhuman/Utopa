@@ -92,7 +92,7 @@ b.sendMsg("/panic");
 
 */
 
-/*
+
 // ------------ Live Coding ------------
 
 ~bo.clearAll();
@@ -175,7 +175,7 @@ een noot heeft een velocity curve met een attack; bij het nogmaals sturen van de
 )
 ~bo.note(2, nil, 60, 0); // stop note
 
-*/
+
 
 
 
