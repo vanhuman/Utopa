@@ -297,13 +297,14 @@
 		// buttonStop.valueAction_(1);
 		// buttonStopClock.clear;
 	};
+	// win.alwaysOnTop = true;
 
 	// initialize
 	10.do { |i|
 		fLoadRegistration.value(i, true); // just set the state of the preset buttons
 	};
 	// evt.presetButton[0].valueAction_(1); // select the first preset
-	buttonStop.valueAction_(1);
+	// buttonStop.valueAction_(1);
 	cView.focus(true);
 	win;
 };

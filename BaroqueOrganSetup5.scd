@@ -10,9 +10,9 @@ if(~bo.notNil, { ~bo.clearAll() });
 ~bo = EM(); // functions in an EM always have the environment as first argument
 
 // ~bo.addr = NetAddr.new("192.168.0.1", 1803);
-// ~bo.addr = NetAddrMon.new("192.168.0.1", 1803);
+~bo.addr = NetAddrMon.new("192.168.0.1", 1803);
 
-~bo.addr = NetAddrMon.new("127.0.0.1", 8000);
+// ~bo.addr = NetAddrMon.new("127.0.0.1", 8000);
 
 ~bo.noteOffset = 0;
 ~bo.chanOffset = 0;
@@ -22,7 +22,7 @@ if(~bo.notNil, { ~bo.clearAll() });
 (Document.dir ++ "KP6-3.7/Lib/Definitions.scd").load();
 
 // MIDI re-routing and some specific MIDI processing functions
-// (Document.dir ++ "KP6-3.7/Lib/MidiSetup.scd").load();
+(Document.dir ++ "KP6-3.7/Lib/MidiSetup.scd").load();
 
 // register board
 (Document.dir ++ "KP6-3.7/Lib/Gui.scd").load();
