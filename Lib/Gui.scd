@@ -92,6 +92,9 @@
 		evt.delayOnTimes.postln;
 	});
 	evt.buttonScDelay.value = if(evt.scDelayOn, { 1 }, { 0 });
+	if (~bo.showSCdelayButton.isNil) {
+		evt.buttonScDelay.visible_(false);
+	};
 
 	// Empty row
 	StaticText(cView, (buttonWidth*0.2) @ (cellHeight*2)).string_("").font_(bigFont).align_(\center);
@@ -204,7 +207,7 @@
 	fSaveRegistration = {
 		arg preset;
 		var registrationsFile, registrationPresets, path, manualCounter = 0, newRegistration;
-		path = Document.current.dir ++ "/Registrations.scd";
+		path = ~bo.currentDir ++ "/Registrations.scd";
 		registrationPresets = path.load;
 		newRegistration = []!evt.buttons.size;
 		registrationPresets[preset].size.do { |index|
@@ -231,7 +234,7 @@
 	fLoadRegistration = {
 		arg preset, emptyCheckOnly = false;
 		var registrationPresets, registrationsFile, path, manualCounter = 0, registrationEmpty = true;
-		path = Document.current.dir ++ "/Registrations.scd";
+		path = ~bo.currentDir ++ "/Registrations.scd";
 		if(File.exists(path).not, {
 			registrationsFile = File(path,"w");
 			registrationsFile.write("[ [], [], [], [], [], [], [], [], [], [] ]");

@@ -4,10 +4,8 @@
 // connect with DHCP to server 192.168.0.60
 
 ~testMode = true;
-~showGui = true;
 
 if(~bo.notNil, { ~bo.clearAll() });
-
 ~bo = EM(); // functions in an EM always have the environment as first argument
 
 if (~testMode) {
@@ -15,10 +13,11 @@ if (~testMode) {
 } {
 	~bo.addr = NetAddrMon.new("192.168.0.1", 1803);
 };
-
 ~bo.noteOffset = 0;
 ~bo.chanOffset = 0;
 ~bo.upperRange = 85; // not sounding from 86 - 92
+~bo.currentDir = Document.current.dir;
+~bo.showSCdelayButton = true;
 
 // setup of the basic functions
 (Document.dir ++ "KP6-3.7/Lib/Definitions.scd").load();
@@ -27,9 +26,7 @@ if (~testMode) {
 (Document.dir ++ "KP6-3.7/Lib/MidiSetup.scd").load();
 
 // register board
-if (~showGui) {
-	(Document.dir ++ "KP6-3.7/Lib/Gui.scd").load();
-}
+(Document.dir ++ "KP6-3.7/Lib/Gui.scd").load();
 
 )
 
