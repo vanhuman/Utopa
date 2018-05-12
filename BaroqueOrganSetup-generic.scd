@@ -1,6 +1,6 @@
 (
 
-// ------------ Setup environment ------------
+// ----------------------------- Setup environment -----------------------------
 // connect with DHCP to server 192.168.0.60
 
 ~testMode = true;
@@ -29,7 +29,7 @@ if (~showGui) {
 
 )
 
-// ------------ Testing --------------
+// ----------------------------- Testing -----------------------------
 
 // OSC monitor on/off
 ~oscOutMonitor = 1;
@@ -69,6 +69,7 @@ if (~showGui) {
 ~bo.div(2, 1, 3, false);
 
 // chan, layer, div, register(s), clear
+~bo.divReg(2, 1, 3, 1, false);
 ~bo.divReg(2, 1, 3, [1, 3, 4]);
 ~bo.divReg(2, 1, 3, [1, 3, 4], false);
 
@@ -131,9 +132,7 @@ if (~showGui) {
 
 
 
-/*
-
-OSC Documentation Utopa Baroque Organ
+/* ----------------------------- OSC Documentation Utopa Baroque Organ -----------------------------
 
 The console has a DHCP server with IP 192.168.0.60. Just connect an ethernet cable, set your computer to work with DHCP in the network settings, and it should receive an IP from the console. Then send your OSC to IP 192.168.0.1 on port 1803.
 
@@ -163,7 +162,7 @@ Stops for Utopa (registers) (a list of stop numbers and ranges below):
 	Clearing all stops and adding multiple:
 		 /M0/L1/S, 0, 40, 43
 
-Stops for Sauer (not tested by me) (Sauer works in divisions: grey, green, white, etc and stops within those divisions):
+Stops for Sauer (not tested by me) (Sauer works in divisions: grey, green, white, etc and stops within those divisions, details below):
 	First enable a division for a manual/layer (division 2 in this case):
 		/M0/L1/D, 2
 	Then add registers 12 and 13 to this division:
@@ -180,6 +179,25 @@ Adding a layer to a manual (there are 4 layers by default; if you want to use mo
 	Adding 2 layers to manual 3, you have you add a layer twice:
 		/M3/createLayer
 		/M3/createLayer
+
+The following messages are confirmed by Wouter to work:
+
+	/M2/L1/Transpose, 12, "on"
+	(the number is in semitones)
+
+	/M2/L1/Delay, 2, "on"
+	(the integer is in milliseconds)
+
+	/M2/L1/Staccato, 25, "on"
+	(the integer is in milliseconds)
+
+	/M2/L1/Prolong, 0.2, "on"
+	(the integer is in milliseconds)
+
+	/M2/L1/PulseFreq, 0.0, "on"
+		mapping: 0.0 - 1.0 linear from 245ms to 5ms, -1.0 - 0.0 linear from 5bpm to 245bpm
+
+	/M2/L1/PulseWidth, 0.2, "on"
 
 The following messages I have barely tested (the info is raw, from the developers from Sinua):
 
@@ -200,14 +218,8 @@ Tremolo, there are two:
 
 /M2/L1/VelMin, 0.2, "on"
 /M2/L1/VelMax, 0.2, "on" // only notes between these velocities will be accepted
-/M2/L1/Transpose, 12, "on" // int = semitones
 /M2/L1/Left, 0.2, "on"
 /M2/L1/Right, 0.2, "on" // only notes between these pitches will be accepted
-/M2/L1/Delay, 2, "on" // int = milliseconds
-/M2/L1/Staccato, 25, "on" // int = milliseconds
-/M2/L1/Prolong, 0.2, "on" // int = milliseconds
-/M2/L1/PulseFreq, 0.0, "on" // -1.0=5bpm, 1.0=5ms, 0.0=245bpm (mostly the same as 245ms)
-/M2/L1/PulseWidth, 0.2, "on"
 /M2/L1/Sostenuto, 0.2, "on" // notes with velocity above this value will clear all, lower will toggle notes
 /M2/L1/Midi, 0, "on" // int = channel, 0=off
 /M2/L1/DynWidth, 0.2, "on" // not yet ready, will set the width of the dynamic range (for magnet speed)
@@ -215,7 +227,7 @@ Tremolo, there are two:
 why this? -> set the width to 0.0, and you can "move" active magnets all at once by altering the center value.
 
 Stops Utopa:
-
+// Hauptwerk
 	\burdun_16, 36,
 	\principal_8, 37,
 	\rohrflott_8, 38,
@@ -229,7 +241,7 @@ Stops Utopa:
 	\cornett_4fach, 46,
 	\fagott_16, 47,
 	\trompet_8, 48,
-
+// Oberwerk
 	\gedackt_8, 49,
 	\violdi_gamba_8, 50,
 	\unda_maris_8, 51,
@@ -243,7 +255,7 @@ Stops Utopa:
 	\sufflott_1, 59,
 	\scharff_4fach, 60,
 	\vox_humana_8, 61,
-
+// Pedals
 	\principal_16, 62,
 	\subbass_16, 63,
 	\quint_bass_12, 64,
@@ -307,6 +319,33 @@ divisions Sauer:
 
 */
 
+/* ----------------------------- Random notes -----------------------------
+
+White buttons beneath Sauer Division buttons:
+8' should be on all the time
+4' adds an octave above
+16' adds an octave below
+
+*/
+
+
+/* ----------------------------- MIDI Documentation Utopa Baroque Organ -----------------------------
+
+Pedals respond to MIDI notes on channel 1, Manuals 1, 2, 3 correspond to MIDI channels 2, 3, 4.
+
+MIDI channels 14, 15, and 16 are meant for control data.
+See the console_inputs MIDI.pdf document for the mapping. Notes for that document:
+	MIDI note numbers are in the left column, but you have to subtract 1
+		(so for example you can switch on stop Dulciana on the Sauer with MIDI note 0 on channel 14)
+	The numbers 1-128 are for MIDI channel 14, the numbers 129-256 are for MIDI channel 15
+	It is as yet unclear how to reach numbers 257-383 (channel 16 seems logical, but not working)
+
+
+
+
+
+
+*/
 
 
 
