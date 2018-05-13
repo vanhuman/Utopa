@@ -231,14 +231,7 @@
 	arg evt, chan, layer, div, regs, clear = true;
 	if(regs.isArray.not, { regs = [regs] });
 	if(clear, { regs = [0] ++ regs }); // clear all active registers
-	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/D" ++ div ++ "/S", *regs);
-};
-
-~bo.delay = {
-	// switching delay on or off
-	arg evt, chan, layer, amount;
-	var onOff = if(amount > 0, { '"on"' }, { '"off"' });
-	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/delay", amount.asString, onOff);
+	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/S", *regs);
 };
 
 ~bo.scDelayOn = true;
@@ -255,9 +248,67 @@
 	});
 };
 
+~bo.delay = {
+	// switching delay on or off
+	arg evt, chan, layer, msec;
+	var onOff = if(msec > 0, { "on" }, { "off" });
+	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Delay", msec, onOff);
+};
+
 ~bo.transpose = {
 	arg evt, chan, layer, semitones;
-	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/transpose", semitones);
+	var onOff = if(semitones > 0, { "on" }, { "off" });
+	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Transpose", semitones, onOff);
+};
+
+~bo.staccato = {
+	arg evt, chan, layer, msec;
+	var onOff = if(msec > 0, { "on" }, { "off" });
+	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Staccato", msec, onOff);
+};
+
+~bo.prolong = {
+	arg evt, chan, layer, msec;
+	var onOff = if(msec > 0, { "on" }, { "off" });
+	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Prolong", msec, onOff);
+};
+
+~bo.pulsefreq = {
+	// value 0.0 - 1.0 linear from 245ms to 5ms, -1.0 - 0.0 linear from 5bpm to 245bpm
+	arg evt, chan, layer, value, on = true;
+	var onOff = if(on, { "on" }, { "off" });
+	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/PulseFreq", value, onOff);
+};
+
+~bo.pulsewidth = {
+	// fraction 0.0 - 1.0
+	arg evt, chan, layer, fraction, on = true;
+	var onOff = if(on, { "on" }, { "off" });
+	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/PulseWidth", fraction, onOff);
+};
+
+~bo.sp = {
+	arg evt, pedal, value;
+	evt.addr.sendMsg("/SP" ++ pedal.asString, value);
+};
+
+~bo.trem = {
+	// werk = 'OW' or 'HW', pulsewidth = 0.0 - 1.0
+	arg evt, werk = 'OW', msec, pulsewidth = 0.5, on = true;
+	var onOff = if(on, { "on" }, { "off" });
+	evt.addr.sendMsg("/Trem" ++ werk, onOff, pulsewidth, '"' ++ msec.asString ++ 'ms"');
+};
+
+~bo.mute = {
+	arg evt, chan, layer, on = true;
+	var onOff = if(on, { "on" }, { "off" });
+	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Mute", onOff);
+};
+
+~bo.sostenuto = {
+	arg evt, chan, layer, boundary, on = true;
+	var onOff = if(on, { "on" }, { "off" });
+	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Sostenuto", boundary, onOff);
 };
 
 ~bo.panic = {
