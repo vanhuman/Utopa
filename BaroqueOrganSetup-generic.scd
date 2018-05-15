@@ -1,21 +1,10 @@
 (
 
-/*
-BUGS
-* Stops Sauer  "/M1/L1/S, 1" show on the screen, but don't sound; "/M1/L1/D3/S, 1" doesn't even show on the screen
-* Adding layers via console nothing sounded anymore, only in edit mode, but only the first 4 layers
-* swell pedals '/SP0, value' Utopa, 'SP2, value' Sauer, range 0-127
-* tremolo zonder manual layer data
-* mute werkt niet
-
-email Christina over hulp na 4 juni
-*/
-
 // ----------------------------- Setup environment -----------------------------
 // connect with DHCP to server 192.168.0.60
 
 ~testMode = true;
-~showGui = true;
+~showGui = false;
 
 if(~bo.notNil, { ~bo.clearAll() });
 ~bo = EM(); // functions in an EM always have the environment as first argument
@@ -46,47 +35,51 @@ if (~showGui) {
 ~oscOutMonitor = 1;
 ~oscOutMonitor = 0;
 
+// tuning
+{SinOsc.ar(60.midicps)!2}.play;
+
 // Manuals are counted from 0, so pedals is 0, manuals 1, 2, 3 are numbers 1, 2, 3. Layers per manual are counted from 1.
+// Often, if the layer is omitted, parameters are set for all layers on that manual
 
-// channel(s), layer(s) or nil for all channels
-~bo.panic(nil);
+// panic: stop all notes, remove all registers, delete all extra layers
+~bo.panic();
 
+// trigger a note
 // channel, layer, note(s), velocity
 ~bo.note(2, 2, 85, 127);
 ~bo.note(2, 2, 85, 0);
 ~bo.note(0, 1, 60, 0);
 
-// tuning
-{SinOsc.ar(60.midicps)!2}.play;
-
+// 3 notes to all channels
 ~bo.note(1, nil, [60, 62, 76], 64);
+// shortcut
 ~bo.midinote(1, [60, 62, 76], 64);
 
-// chan, layer, register(s), clear
-~bo.reg(0, 1, [47,49]); // channel, layer, register
-~bo.regAdd(0, 1, 48); // add register 48
-~bo.regAdd(0, 1, [-47, 50]); // remove register 47
+// add registers to Utopa
+// chan, layer, register(s)
+~bo.reg(0, 1, [37,40]); // set only 37 and 40, remove all others
+~bo.regAdd(0, 1, 51); // add register 51
+~bo.regAdd(0, 1, [-40, 42]); // remove register 40 and add register 42
 
-// channel, layer, delay-time / 0-1 is % of 5000ms, 1-.. is absolute in ms
-~bo.delay(1, 1, 10);
-~bo.delay(1, 1, 0); // delay off
+// add registers to Sauer in two steps: Divisions and Registers
 
-// channel, layer, semitones
-~bo.transpose(2, nil, 5);
-~bo.transpose(2, 3, 5);
-
-// chan, layer, division, clear
-~bo.div(1, 1, 3); // manual I layer 1 division wit
-~bo.div(1, 1, 5, false);
+// chan, layer, division
+~bo.div(1, 1, [2, 3]); // set only divisions green (2) and white (3), remove all others
+~bo.divAdd(1, 1, 1); // add division grey (1)
 
 // chan, layer, div, register(s), clear
-~bo.divReg(1, 1, 3, 1, false);
-~bo.divReg(1, 1, 3, [1, 3, 4]);
-~bo.divReg(1, 1, 3, [1, 3, 4], false);
+~bo.divReg(3, 1); // set only register 1 to division white (3), remove all other stops
+~bo.divReg(3, [1, 3, 4]);
+~bo.divRegAdd(3, [1, 3, 4]); // add registers 1, 3, 4 to division white (3)
 
+// channel, layer, delay-time in milliseconds
+~bo.delay(1, 1, 100);
+~bo.delay(1, 1, 0); // 0 msec = delay off
+
+// add a layer to a channel
+~bo.addLayer(1);
 
 // example: looping notes
-
 (
 ~duration = 0.02;
 ~pause = 0.01;
@@ -111,28 +104,26 @@ if (~showGui) {
 // example: setting up manual I
 (
 // layer 1 with three registers
-~bo.reg(1, 1, [36, 40, 49]);
+~bo.reg(1, 1, [36, 40, 51]);
 
-// layer 2 with two registers and a delay of 50ms
-~bo.reg(1, 2, [50, 51]);
+// layer 2 with two registers and a delay of 100ms
+~bo.reg(1, 2, [41, 42]);
 ~bo.delay(1, 2, 100);
 
-// layer 3 with one register and a delay of 70ms
-~bo.reg(1, 3, 60);
-~bo.delay(1, 3, 170);
+// layer 3 with one register and a delay of 200ms
+~bo.reg(1, 3, 62);
+~bo.delay(1, 3, 200);
 
-// layer 4 with two registers and a delay of 170ms
-~bo.reg(1, 4, 42);
-~bo.reg(1, 4, 43);
-~bo.delay(1, 4, 170);
+// layer 4 with two registers and a delay of 300ms
+~bo.reg(1, 4, [53, 54]);
+~bo.delay(1, 4, 300);
 
 // add a layer
 ~bo.addLayer(1);
 
-// layer 5 with two registers and a delay of 500ms
-~bo.reg(1, 4, 37);
-~bo.reg(1, 4, 38);
-~bo.delay(1, 4, 500);
+// layer 5 with two registers and a delay of 400ms
+~bo.reg(1, 4, [37, 38]);
+~bo.delay(1, 4, 400);
 
 )
 
@@ -142,9 +133,7 @@ if (~showGui) {
 // stop note
 ~bo.note(1, nil, 60, 0);
 
-~bo.delay(0, 1, 30);
-~bo.delay(0, 1, 0);
-
+// transposing
 ~bo.transpose(1, 2, 9);
 ~bo.transpose(0, 1, 0);
 (
@@ -171,14 +160,25 @@ if (~showGui) {
 ~bo.prolong(0, 1, 0);
 
 ~bo.pulsefreq(1, 1, 0.5)
-~bo.pulsefreq(1, 1, 0.5, false)
+~bo.pulsefreq(1, 1, 0.5, \off)
 ~bo.pulsewidth(1, 1, 0.5)
-~bo.pulsewidth(1, 1, 0.5, false)
+~bo.pulsewidth(1, 1, 0.5, \off)
 
+~bo.trem('OW', 100, 0.6);
+~bo.trem('OW', 100, 0.6, \off);
+~bo.trem('HW', 250, 0.6);
+
+~bo.sostenuto(1, 1, 0.9);
+~bo.sostenuto(1, 1, 0.7, \off);
+
+~bo.sustain(1, 1, 0.9);
+~bo.sustain(1, 1, 0.7, \off);
+
+// schwell pedal 0 is Utopa air and schwell pedal 2 is the Sauer schwellchest
 ~bo.sp(0, 0);
 ~bo.sp(0, 127);
-~bo.sp(1, 0);
-~bo.sp(1, 127);
+~bo.sp(2, 0);
+~bo.sp(2, 127);
 
 (
 ~pedal = 0;
@@ -200,15 +200,9 @@ if (~showGui) {
 )
 ~sp.stop;
 
-~bo.trem('OW', 100, 0.6, true);
-~bo.trem('HW', 250, 0.6, true);
-
-~bo.sostenuto(1, 1, 0.9);
-~bo.sostenuto(1, 1, 0.7, false);
-
-// werkt niet
+// not working
 ~bo.mute(1, 1);
-~bo.mute(1, 1, false);
+~bo.mute(1, 1, \off);
 
 
 

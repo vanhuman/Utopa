@@ -1,12 +1,10 @@
 
 // data containers ------------------------------------
 
-~bo.ped = 0;
-~bo.man1 = 1;
-~bo.man2 = 2;
-~bo.man3 = 3;
+~bo.ped = 0; ~bo.man1 = 1; ~bo.man2 = 2; ~bo.man3 = 3;
 
 ~bo.registers = OEM(
+	// hauptwerk ----------
 	\burdun_16, 36,
 	\principal_8, 37,
 	\rohrflott_8, 38,
@@ -20,7 +18,7 @@
 	\cornett_4fach, 46,
 	\fagott_16, 47,
 	\trompet_8, 48,
-
+	// oberwerk ----------
 	\gedackt_8, 49,
 	\violdi_gamba_8, 50,
 	\unda_maris_8, 51,
@@ -34,7 +32,7 @@
 	\sufflott_1, 59,
 	\scharff_4fach, 60,
 	\vox_humana_8, 61,
-
+	// pedalen ----------
 	\principal_16, 62,
 	\subbass_16, 63,
 	\quint_bass_12, 64,
@@ -50,7 +48,6 @@
 	~bo.registersByNumber[value] = key;
 	~bo.notesPerRegister[value] = Array.newClear(127);
 };
-
 ~bo.layersPerManual = (0: 0, 1: 0, 2: 0, 3: 0);
 
 ~bo.regRanges = ( // min, max, exceptions[]
@@ -128,48 +125,6 @@
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/V", force, *notes);
 };
 
-~bo.checkMultipleNotesPerRegister = {
-	arg evt, chan, layer, notes, val;
-	evt.notify("Multiple Notes Per Register Check is ON");
-	if(notes.isArray.not, { notes = [notes] });
-	evt.registrationsPerLayer[chan][layer].do { |reg|
-		notes.do { |note|
-			if(val > 0, {
-				if(evt.notesPerRegister[reg][note] == 1, {
-					format("Note % plays more than once on M %, L %, S %", note, chan, layer, reg).warn;
-				});
-				evt.notesPerRegister[reg][note] = 1;
-				// format("Note % plays on M %, L %, S %", note, chan, layer, reg).postln;
-			}, {
-				evt.notesPerRegister[reg][note] = nil;
-				// format("Note % stopped on M %, L %, S %", note, chan, layer, reg).postln;
-			});
-		};
-	};
-};
-
-~bo.outOfRangeCheck = {
-	// check if the notes are within range for each of the registers on this layer
-	arg evt, chan, layer, notes, val;
-	evt.notify("Out of Range Check is ON");
-	if(val > 0, {
-		~bo.registrationsPerLayer[chan][layer].do { |reg|
-			var from = ~bo.regRanges[reg][0];
-			var to = ~bo.regRanges[reg][1];
-			var except = if(~bo.regRanges[reg].size > 2, { ~bo.regRanges[reg][2] }, { [ ] });
-			var notesArray = if(notes.isArray, { notes }, { [notes] });
-			notesArray.do { |note|
-				if( (note < from) || (note > to), {
-					format("/M%/L%/S% (%), note % out of range (% - %)", chan, layer, reg, ~bo.registersByNumber[reg], note, from, to).postln;
-				});
-				if( except.indexOf(note).notNil, {
-					format("/M%/L%/S% (%), note % out of range exception (% - %)", chan, layer, reg, ~bo.registersByNumber[reg], note, from, to).postln;
-				});
-			};
-		};
-	});
-};
-
 ~bo.midinote = {
 	// send note to all layers
 	arg evt, chan, notes, val;
@@ -191,27 +146,7 @@
 	// evt.regStore(chan, layer, regs);
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/S", *regs);
 };
-
-~bo.regStore = {
-	// store registers per layer to check for out of range or multiple notes on a register when triggering a note
-	arg evt, chan, layer, regs;
-	evt.notify("Store Registers is ON");
-	regs.do { |reg|
-		var index = ~bo.registrationsPerLayer[chan][layer].indexOf(reg.abs);
-		if(reg == 0, {
-			~bo.registrationsPerLayer[chan][layer] = [ ];
-		});
-		if(reg > 0, {
-			if(index.isNil, { ~bo.registrationsPerLayer[chan][layer].add(reg) });
-		});
-		if(reg < 0, {
-			if(index.notNil, { ~bo.registrationsPerLayer[chan][layer].removeAt(index) });
-		});
-	};
-};
-
 ~bo.regAdd = {
-	// set relative register
 	arg evt, chan, layer, regs;
 	evt.reg(chan, layer, regs, false);
 };
@@ -223,33 +158,26 @@
 	if(clear, { divs = [0] ++ divs }); // clear all active registers
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/D", *divs);
 };
+~bo.divAdd = {
+	arg evt, chan, layer, regs;
+	evt.div(chan, layer, regs, false);
+};
 
 ~bo.divReg = {
 	// set register per division
 	// set absolute registers, or relative if clear is false
 	// regs: integer or integer[], a negative number meaning 'remove stop'
-	arg evt, chan, layer, div, regs, clear = true;
+	arg evt, div, regs, clear = true;
 	if(regs.isArray.not, { regs = [regs] });
 	if(clear, { regs = [0] ++ regs }); // clear all active registers
-	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/S", *regs);
+	evt.addr.sendMsg("/D" ++ div ++ "/S", *regs);
 };
-
-~bo.scDelayOn = true;
-~bo.scDelay = {
-	arg evt, switch;
-	if(switch, {
-		evt.scDelayOn = true;
-		evt.delayOnTimes = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
-		evt.delayOffTimes = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
-	}, {
-		evt.scDelayOn = false;
-		evt.delayOnTimes = [0, 0, 0, 0, 0, 0];
-		evt.delayOffTimes = [0, 0, 0, 0, 0, 0];
-	});
+~bo.divRegAdd = {
+	arg evt, div, regs;
+	evt.divReg(div, regs, false);
 };
 
 ~bo.delay = {
-	// switching delay on or off
 	arg evt, chan, layer, msec;
 	var onOff = if(msec > 0, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Delay", msec, onOff);
@@ -275,18 +203,19 @@
 
 ~bo.pulsefreq = {
 	// value 0.0 - 1.0 linear from 245ms to 5ms, -1.0 - 0.0 linear from 5bpm to 245bpm
-	arg evt, chan, layer, value, on = true;
-	var onOff = if(on, { "on" }, { "off" });
+	arg evt, chan, layer, value, on = \on;
+	var onOff = if(on == \on, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/PulseFreq", value, onOff);
 };
 
 ~bo.pulsewidth = {
 	// fraction 0.0 - 1.0
-	arg evt, chan, layer, fraction, on = true;
-	var onOff = if(on, { "on" }, { "off" });
+	arg evt, chan, layer, fraction, on = \on;
+	var onOff = if(on == \on, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/PulseWidth", fraction, onOff);
 };
 
+// schwell pedal 0 is Utopa air and schwell pedal 2 is the Sauer schwellchest
 ~bo.sp = {
 	arg evt, pedal, value;
 	evt.addr.sendMsg("/SP" ++ pedal.asString, value);
@@ -294,21 +223,27 @@
 
 ~bo.trem = {
 	// werk = 'OW' or 'HW', pulsewidth = 0.0 - 1.0
-	arg evt, werk = 'OW', msec, pulsewidth = 0.5, on = true;
-	var onOff = if(on, { "on" }, { "off" });
+	arg evt, werk = 'OW', msec, pulsewidth = 0.5, on = \on;
+	var onOff = if(on == \on, { "on" }, { "off" });
 	evt.addr.sendMsg("/Trem" ++ werk, onOff, pulsewidth, '"' ++ msec.asString ++ 'ms"');
 };
 
 ~bo.mute = {
-	arg evt, chan, layer, on = true;
-	var onOff = if(on, { "on" }, { "off" });
+	arg evt, chan, layer, on = \on;
+	var onOff = if(on == \on, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Mute", onOff);
 };
 
 ~bo.sostenuto = {
-	arg evt, chan, layer, boundary, on = true;
-	var onOff = if(on, { "on" }, { "off" });
+	arg evt, chan, layer, boundary, on = \on;
+	var onOff = if(on == \on, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Sostenuto", boundary, onOff);
+};
+
+~bo.sustain = {
+	arg evt, chan, layer, boundary, on = \on;
+	var onOff = if(on == \on, { "on" }, { "off" });
+	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Sustain", boundary, onOff);
 };
 
 ~bo.panic = {
@@ -354,3 +289,81 @@
 		evt.notifyCount = 0;
 	});
 };
+
+~bo.checkMultipleNotesPerRegister = {
+	// check whether notes are played more than once simultaneously
+	arg evt, chan, layer, notes, val;
+	evt.notify("Multiple Notes Per Register Check is ON");
+	if(notes.isArray.not, { notes = [notes] });
+	evt.registrationsPerLayer[chan][layer].do { |reg|
+		notes.do { |note|
+			if(val > 0, {
+				if(evt.notesPerRegister[reg][note] == 1, {
+					format("Note % plays more than once on M %, L %, S %", note, chan, layer, reg).warn;
+				});
+				evt.notesPerRegister[reg][note] = 1;
+				// format("Note % plays on M %, L %, S %", note, chan, layer, reg).postln;
+			}, {
+				evt.notesPerRegister[reg][note] = nil;
+				// format("Note % stopped on M %, L %, S %", note, chan, layer, reg).postln;
+			});
+		};
+	};
+};
+
+~bo.outOfRangeCheck = {
+	// check if the notes are within range for each of the registers on this layer
+	arg evt, chan, layer, notes, val;
+	evt.notify("Out of Range Check is ON");
+	if(val > 0, {
+		~bo.registrationsPerLayer[chan][layer].do { |reg|
+			var from = ~bo.regRanges[reg][0];
+			var to = ~bo.regRanges[reg][1];
+			var except = if(~bo.regRanges[reg].size > 2, { ~bo.regRanges[reg][2] }, { [ ] });
+			var notesArray = if(notes.isArray, { notes }, { [notes] });
+			notesArray.do { |note|
+				if( (note < from) || (note > to), {
+					format("/M%/L%/S% (%), note % out of range (% - %)", chan, layer, reg, ~bo.registersByNumber[reg], note, from, to).postln;
+				});
+				if( except.indexOf(note).notNil, {
+					format("/M%/L%/S% (%), note % out of range exception (% - %)", chan, layer, reg, ~bo.registersByNumber[reg], note, from, to).postln;
+				});
+			};
+		};
+	});
+};
+
+~bo.regStore = {
+	// store registers per layer to check for out of range or multiple notes on a register when triggering a note
+	arg evt, chan, layer, regs;
+	evt.notify("Store Registers is ON");
+	regs.do { |reg|
+		var index = ~bo.registrationsPerLayer[chan][layer].indexOf(reg.abs);
+		if(reg == 0, {
+			~bo.registrationsPerLayer[chan][layer] = [ ];
+		});
+		if(reg > 0, {
+			if(index.isNil, { ~bo.registrationsPerLayer[chan][layer].add(reg) });
+		});
+		if(reg < 0, {
+			if(index.notNil, { ~bo.registrationsPerLayer[chan][layer].removeAt(index) });
+		});
+	};
+};
+
+/*
+Divisions and stops Sauer:
+
+	1 grijs
+		13 15 16 17
+	2 groen
+		12 14 18 19 20
+	3 wit
+		1 3 4 7 8 11 21 (motor)
+	4 paars
+		2 5 6 9 10
+	5 geel
+		22 23 24 25 26 27 28 29 (tremulant)
+	6 roze
+		30 31 32 33 34 35
+*/

@@ -78,22 +78,21 @@
 	buttonOSC.value = ~oscOutMonitor ? 0;
 
 	// SCdelay
-	evt.buttonScDelay = SmoothButton(cView, buttonWidth @ (cellHeight*2))
-	.radius_(2).border_(1).canFocus_(false).font_(font)
-	.states_( [ ["SC delay OFF", Color.black, Color.white], ["SC delay ON", Color.white, buttonColor] ] )
-	.action_({ |bt|
-		if(bt.value == 1, {
-			evt.scDelay(true);
-			"Delay switched ON".warn;
+	if (~bo.showSCdelayButton.notNil) {
+		evt.buttonScDelay = SmoothButton(cView, buttonWidth @ (cellHeight*2))
+		.radius_(2).border_(1).canFocus_(false).font_(font)
+		.states_( [ ["SC delay OFF", Color.black, Color.white], ["SC delay ON", Color.white, buttonColor] ] )
+		.action_({ |bt|
+			if(bt.value == 1, {
+				evt.scDelay(true);
+				"Delay switched ON".warn;
 			}, {
 				evt.scDelay(false);
 				"Delay switched OFF".warn;
+			});
+			evt.delayOnTimes.postln;
 		});
-		evt.delayOnTimes.postln;
-	});
-	evt.buttonScDelay.value = if(evt.scDelayOn, { 1 }, { 0 });
-	if (~bo.showSCdelayButton.isNil) {
-		evt.buttonScDelay.visible_(false);
+		evt.buttonScDelay.value = if(evt.scDelayOn, { 1 }, { 0 });
 	};
 
 	// Empty row

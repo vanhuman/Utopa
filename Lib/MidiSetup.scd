@@ -1,5 +1,20 @@
 // ------------ Send incoming MIDI from Nuendo out as OSC, sometimes processed ------------
 
+// support for SuperCollider MIDI delay
+~bo.scDelayOn = true;
+~bo.scDelay = {
+	arg evt, switch;
+	if(switch, {
+		evt.scDelayOn = true;
+		evt.delayOnTimes = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
+		evt.delayOffTimes = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
+	}, {
+		evt.scDelayOn = false;
+		evt.delayOnTimes = [0, 0, 0, 0, 0, 0];
+		evt.delayOffTimes = [0, 0, 0, 0, 0, 0];
+	});
+};
+
 "### Initializing MIDI".postln;
 MIDIIn.connectAll;
 
