@@ -4,7 +4,7 @@
 // connect with DHCP to server 192.168.0.60
 
 ~testMode = true;
-~showGui = false;
+~showGui = true;
 
 if(~bo.notNil, { ~bo.clearAll() });
 ~bo = EM(); // functions in an EM always have the environment as first argument
@@ -20,11 +20,11 @@ if (~testMode) {
 ~bo.currentDir = Document.current.dir;
 
 // setup of the basic functions
-(Document.dir ++ "KP6-3.7/Lib/Definitions.scd").load();
+(Document.current.dir ++ "/Lib/Definitions.scd").load();
 
 // register board
 if (~showGui) {
-	(Document.dir ++ "KP6-3.7/Lib/Gui.scd").load();
+	(Document.current.dir ++ "/Lib/Gui.scd").load();
 }
 
 )
@@ -32,6 +32,7 @@ if (~showGui) {
 // ----------------------------- Testing -----------------------------
 
 // OSC monitor on/off
+~oscOutMonitor = 2;
 ~oscOutMonitor = 1;
 ~oscOutMonitor = 0;
 

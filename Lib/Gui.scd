@@ -5,14 +5,14 @@
 ~bo.makeWindow = { |evt|
 	var win, fView, cView, buttonStop, buttonOSC, fSaveRegistration, fLoadRegistration, selectedPreset = 0;
 	var buttonClearRegs, buttonClearRegsClock, buttonStopClock, buttonSaveRegs;
-	var numberOfLayers = 13;
-	var cellWidth = 135, cellHeight = 14, winHeight = 755, winWidth = (cellWidth + 20) * numberOfLayers, buttonWidth = cellWidth* 1.05;
+	var numberOfLayers = 8;
+	var cellWidth = 135, cellHeight = 14, winHeight = 755, winWidth = (cellWidth + 13) * numberOfLayers, buttonWidth = cellWidth* 1.05;
 	var font = Font("Courier", 11), bigFont = Font("Courier", 13);
 	var titleColor = Color.blue(1, 0.1), buttonColor = Color.blue, manualColor = Color.blue(1,0.3);
 
-	evt.w = win = Window( "Baroque Organ Register Board", Rect(0, 1000, winWidth, winHeight), scroll: true).background_(Color.grey).front;
+	evt.w = win = Window( "Utopa Register Board", Rect(0, 1000, winWidth, winHeight), scroll: true).background_(Color.grey).front;
 	win.addFlowLayout;
-	cView = CompositeView(evt.w, (winWidth - 100) @ 50).background_(Color.white);
+	cView = CompositeView(evt.w, (winWidth - 10) @ 50).background_(Color.white);
 	cView.addFlowLayout;
 
 	// Panic: stop all notes and close all registers
@@ -27,9 +27,11 @@
 				bt.value = 0;
 				"Create extra layers".postln;
 				Task.new({
-					evt.addLayer(3);
+					evt.addLayer(0);
 					0.01.wait;
-					evt.addLayer(3);
+					evt.addLayer(1);
+					0.01.wait;
+					evt.addLayer(2);
 					0.01.wait;
 					evt.addLayer(3);
 				}).start;
@@ -188,19 +190,14 @@
 
 	// layer lanes
 	evt.buttons = OEM();
-	evt.buttons.p = fView.value("Pedals - Layer 1", evt.ped, 1, manualColor);
-	evt.buttons.m1 = fView.value("Manual I - Layer 1", evt.man1, 1, manualColor);
+	evt.buttons.p1 = fView.value("Pedals - Layer 1", evt.ped, 1, manualColor);
+	evt.buttons.p2 = fView.value("Layer 2", evt.ped, 2, delay: true);
+	evt.buttons.m11 = fView.value("Manual I - Layer 1", evt.man1, 1, manualColor);
+	evt.buttons.m12 = fView.value("Layer 2", evt.man1, 2, delay: true);
 	evt.buttons.m21 = fView.value("Manual II - Layer 1", evt.man2, 1, manualColor);
-	evt.buttons.m22 = fView.value("Layer 2", evt.man2, 2);
-	evt.buttons.m23 = fView.value("Layer 3", evt.man2, 3);
-	evt.buttons.m24 = fView.value("Layer 4", evt.man2, 4);
+	evt.buttons.m22 = fView.value("Layer 2", evt.man2, 2, delay: true);
 	evt.buttons.m31 = fView.value("Manual III - Layer 1", evt.man3, 1, manualColor);
 	evt.buttons.m32 = fView.value("Layer 2", evt.man3, 2, delay: true);
-	evt.buttons.m33 = fView.value("Layer 3", evt.man3, 3, delay: true);
-	evt.buttons.m34 = fView.value("Layer 4", evt.man3, 4, delay: true);
-	evt.buttons.m35 = fView.value("Layer 5", evt.man3, 5, delay: true);
-	evt.buttons.m36 = fView.value("Layer 6", evt.man3, 6, delay: true);
-	evt.buttons.m37 = fView.value("Layer 7", evt.man3, 7, delay: true);
 
 	// Function to save the registration into a preset
 	fSaveRegistration = {
