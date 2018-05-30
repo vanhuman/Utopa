@@ -123,17 +123,20 @@
 	// to enable the two lines above, also uncomment the line with 'evt.regStore(chan, layer, regs)' in the function ~bo.reg
 	notes = notes + ~bo.noteOffset;
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/V", force, *notes);
+	""
 };
 
 ~bo.midinote = {
 	// send note to all layers
 	arg evt, chan, notes, val;
 	evt.note(chan, nil, notes, val);
+	""
 };
 
 ~bo.addLayer = {
 	arg evt, chan;
 	evt.addr.sendMsg("/M" ++ chan ++ "/createLayer");
+	""
 };
 
 ~bo.reg = {
@@ -145,6 +148,7 @@
 	if(clear, { regs = [0] ++ regs }); // clear all active registers
 	// evt.regStore(chan, layer, regs);
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/S", *regs);
+	""
 };
 ~bo.regAdd = {
 	arg evt, chan, layer, regs;
@@ -157,6 +161,7 @@
 	if(divs.isArray.not, { divs = [divs] });
 	if(clear, { divs = [0] ++ divs }); // clear all active registers
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/D", *divs);
+	""
 };
 ~bo.divAdd = {
 	arg evt, chan, layer, regs;
@@ -171,6 +176,7 @@
 	if(regs.isArray.not, { regs = [regs] });
 	if(clear, { regs = [0] ++ regs }); // clear all active registers
 	evt.addr.sendMsg("/D" ++ div ++ "/S", *regs);
+	""
 };
 ~bo.divRegAdd = {
 	arg evt, div, regs;
@@ -181,24 +187,28 @@
 	arg evt, chan, layer, msec;
 	var onOff = if(msec > 0, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Delay", msec, onOff);
+	""
 };
 
 ~bo.transpose = {
 	arg evt, chan, layer, semitones;
 	var onOff = if(semitones > 0, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Transpose", semitones, onOff);
+	""
 };
 
 ~bo.staccato = {
 	arg evt, chan, layer, msec;
 	var onOff = if(msec > 0, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Staccato", msec, onOff);
+	""
 };
 
 ~bo.prolong = {
 	arg evt, chan, layer, msec;
 	var onOff = if(msec > 0, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Prolong", msec, onOff);
+	""
 };
 
 ~bo.pulsefreq = {
@@ -206,6 +216,7 @@
 	arg evt, chan, layer, value, on = \on;
 	var onOff = if(on == \on, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/PulseFreq", value, onOff);
+	""
 };
 
 ~bo.pulsewidth = {
@@ -213,12 +224,14 @@
 	arg evt, chan, layer, fraction, on = \on;
 	var onOff = if(on == \on, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/PulseWidth", fraction, onOff);
+	""
 };
 
 // schwell pedal 0 is Utopa air and schwell pedal 2 is the Sauer schwellchest
 ~bo.sp = {
 	arg evt, pedal, value;
 	evt.addr.sendMsg("/SP" ++ pedal.asString, value);
+	""
 };
 
 ~bo.trem = {
@@ -226,29 +239,34 @@
 	arg evt, werk = 'OW', msec, pulsewidth = 0.5, on = \on;
 	var onOff = if(on == \on, { "on" }, { "off" });
 	evt.addr.sendMsg("/Trem" ++ werk, onOff, pulsewidth, '"' ++ msec.asString ++ 'ms"');
+	""
 };
 
 ~bo.mute = {
 	arg evt, chan, layer, on = \on;
 	var onOff = if(on == \on, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Mute", onOff);
+	""
 };
 
 ~bo.sostenuto = {
 	arg evt, chan, layer, boundary, on = \on;
 	var onOff = if(on == \on, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Sostenuto", boundary, onOff);
+	""
 };
 
 ~bo.sustain = {
 	arg evt, chan, layer, boundary, on = \on;
 	var onOff = if(on == \on, { "on" }, { "off" });
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/Sustain", boundary, onOff);
+	""
 };
 
 ~bo.panic = {
 	arg evt;
 	evt.addr.sendMsg("/panic");
+	""
 };
 
 ~bo.stopAllNotes = {

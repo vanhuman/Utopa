@@ -39,321 +39,181 @@ if (~testMode) {
 
 // MIDIIn.doNoteOnAction(~bo.iac1ID, 15, 1, 27); // spoof a note on
 
+// ----------------------------- Testing -----------------------------
 
-
-/*
-
-OSC Documentation Utopa Baroque Organ
-
-The console has a DHCP server with IP 192.168.0.60. Just connect an ethernet cable, set your computer to work with DHCP in the network settings, and it should receive an IP from the console. Then send your OSC to IP 192.168.0.1 on port 1803.
-
-General:
-	Manuals are counted from 0, so pedals is 0, manuals 1, 2, 3 are numbers 1, 2, 3. Layers per manual are counted from 1.
-	OSC messages are comma separated lists, starting with the OSC tag and then the arguments. For example /M2/L4/V, 1, 60
-
-Notes:
-	Starting note 60 on pedals, layer 1:
-		/M0/L1/V, 1, 60
-		(tag, velocity from 0-1, note number)
-	Stopping a note is sending velocity 0:
-		/M0/L1/V, 0, 60
-	Starting multiple notes:
-		/M0/L1/V, 1, 60, 61, 75, 98
-		(the velocity is the same for all notes)
-	Omitting the layer information will trigger the note on all layers on that manual:
-		/M0/V, 1, 60
-
-Stops for Utopa (registers) (a list of stop numbers and ranges below):
-	Adding stop 36 to manual 2, layer 4:
-		/M2/L4/S, 36
-	Removing stop 36 from manual 2, layer 4:
-		/M2/L4/S, -36
-	Adding multiple stops:
-		 /M0/L1/S, 40, 43
-	Clearing all stops and adding multiple:
-		 /M0/L1/S, 0, 40, 43
-
-Stops for Sauer (not tested by me) (Sauer works in divisions: grey, green, white, etc and stops within those divisions):
-	First enable a division for a manual/layer (division 2 in this case):
-		/M0/L1/D, 2
-	Then add registers 12 and 13 to this division:
-		/M0/L1/D2/S, 12, 13
-	First clearing out all divisions/stops can be done again by adding a 0:
-		/M0/L1/D, 0, 2
-		and
-		/M0/L1/D2/S, 0, 12, 13
-
-Panic (stopping all notes and clearing out all stops):
-	/panic
-
-Adding a layer to a manual (there are 4 layers by default; if you want to use more, you first have to add them before you can set a stop):
-	Adding 2 layers to manual 3, you have you add a layer twice:
-		/M3/createLayer
-		/M3/createLayer
-
-The following messages I have barely tested (the info is raw, from the developers from Sinua):
-
-The pedals (not the pedals manual, but the 4 big pedals):
-/SP0, 1.0
-
-Tremolo, there are two:
-/TremHW and /TremOW
-
-/TremOW, "on"
-/TremOW, "off"
-/TremOW, "200ms" // frequency
-/TremOW, "100bpm" // bpm
-/TremOW, "68%" // pulse width
-/TremOW, 0.68 // pulse width
-/TremOW, "on", "30%", "100ms"
-/TremOW, "false", 0.7, "200bpm"
-
-/M2/L1/VelMin, 0.2, "on"
-/M2/L1/VelMax, 0.2, "on" // only notes between these velocities will be accepted
-/M2/L1/Transpose, 12, "on" // int = semitones
-/M2/L1/Left, 0.2, "on"
-/M2/L1/Right, 0.2, "on" // only notes between these pitches will be accepted
-/M2/L1/Delay, 2, "on" // int = milliseconds
-/M2/L1/Staccato, 25, "on" // int = milliseconds
-/M2/L1/Prolong, 0.2, "on" // int = milliseconds
-/M2/L1/PulseFreq, 0.0, "on" // -1.0=5bpm, 1.0=5ms, 0.0=245bpm (mostly the same as 245ms)
-/M2/L1/PulseWidth, 0.2, "on"
-/M2/L1/Sostenuto, 0.2, "on" // notes with velocity above this value will clear all, lower will toggle notes
-/M2/L1/Midi, 0, "on" // int = channel, 0=off
-/M2/L1/DynWidth, 0.2, "on" // not yet ready, will set the width of the dynamic range (for magnet speed)
-/M2/L1/DynCenter, 0.2, "on" // not yet ready, will set the center of that range (for magnet speed)
-why this? -> set the width to 0.0, and you can "move" active magnets all at once by altering the center value.
-
-Stops Utopa:
-
-	\burdun_16, 36,
-	\principal_8, 37,
-	\rohrflott_8, 38,
-	\quintathen_8, 39,
-	\octav_4, 40,
-	\gemshorn_4, 41,
-	\weit_pfeiffe_2, 42,
-	\sexquint_altra_2fach, 43,
-	\mixtur_5fach, 44,
-	\cymbel_3fach, 45,
-	\cornett_4fach, 46,
-	\fagott_16, 47,
-	\trompet_8, 48,
-
-	\gedackt_8, 49,
-	\violdi_gamba_8, 50,
-	\unda_maris_8, 51,
-	\principal_4, 52,
-	\rohrflott_4, 53,
-	\nassat_3, 54,
-	\octav_2, 55,
-	\waldflott_2, 56,
-	\tertia_1, 57,
-	\quinta_1, 58,
-	\sufflott_1, 59,
-	\scharff_4fach, 60,
-	\vox_humana_8, 61,
-
-	\principal_16, 62,
-	\subbass_16, 63,
-	\quint_bass_12, 64,
-	\octav_8, 65,
-	\posaune_16, 66,
-	\posaune_8, 67,
-	\clarin_4, 68
-
-Ranges Utopa per register (upper range is 85, but will be 92, don't know when):
-
-	36: [ 36, (upper range) ],
-	37: [ 36, (upper range) ],
-	38: [ 36, (upper range) ],
-	39: [ 36, (upper range) ],
-	40: [ 36, (upper range) ],
-	41: [ 36, (upper range) ],
-	42: [ 36, (upper range) ],
-	43: [ 36, (upper range) ],
-	44: [ 36, (upper range) ],
-	45: [ 36, (upper range) ],
-	46: [ 59, (upper range) ],
-	47: [ 36, (upper range) ],
-	48: [ 36, (upper range) ],
-
-	49: [ 36, (upper range) ],
-	50: [ 36, (upper range) ],
-	51: [ 56, (upper range) ],
-	52: [ 36, (upper range) ],
-	53: [ 36, (upper range) ],
-	54: [ 36, (upper range) ],
-	55: [ 36, (upper range) ],
-	56: [ 36, (upper range) ],
-	57: [ 36, (upper range) ],
-	58: [ 36, (upper range) ],
-	59: [ 36, (upper range) ],
-	60: [ 36, (upper range) ],
-	61: [ 36, (upper range) ],
-
-	62: [ 36, 66 ],
-	63: [ 36, 66 ],
-	64: [ 36, 66 ],
-	65: [ 36, 66 ],
-	66: [ 36, 66 ],
-	67: [ 36, 66 ],
-	68: [ 36, 66 ],
-
-divisions Sauer:
-
-	1 grijs
-		13 15 16 17
-	2 groen
-		12 14 18 19 20
-	3 wit
-		1 3 4 7 8 11 21 (motor)
-	4 paars
-		2 5 6 9 10
-	5 geel
-		22 23 24 25 26 27 28 29 (tremulant)
-	6 roze
-		30 31 32 33 34 35
-
-*/
-
-
-
-
-
-
-
-
--1 5bpm 0 245 1 5
-~bo.addr.sendMsg("/M1/L1/PulseFreq", 0.92, "on");
-~bo.addr.sendMsg("/M1/L1/PulseWidth", 0.35);
-
-~bo.addr.sendMsg("/M1/L1/PulseFreq", 0.92, "off");
-
-~bo.addr.sendMsg("/SP0", 1.0);
-
-b.sendMsg("/M2/createLayer");
-
-// /TremHW or /TremOW
-
-b.sendMsg("/TremOW"); // toggle
-
-b.sendMsg("/TremOW", "on"); // (or "true", if you like)
-b.sendMsg("/TremOW", "off"); // (or "false")
-
-b.sendMsg("/TremOW", "200ms"); // frequency
-b.sendMsg("/TremOW", "100bpm"); // bpm
-b.sendMsg("/TremOW", "68%"); // pulse width
-b.sendMsg("/TremOW", 0.68); // pulse width
-
-b.sendMsg("/TremOW", "on", "30%", "100ms");
-b.sendMsg("/TremOW", "false", 0.7, "200bpm");
-
-
-Layer properties are all set with one float 0.0 .. 1.0 plus a String "on" (use any other string to turn them off)
-some accept int's as stated.
-b.sendMsg("/M2/L1/VelMin", 0.2, "on");
-b.sendMsg("/M2/L1/VelMax", 0.2, "on"); //only notes between these velocities will be accepted
-b.sendMsg("/M2/L1/Transpose", 12, "on"); // int = semitones
-b.sendMsg("/M2/L1/Left", 0.2, "on");
-b.sendMsg("/M2/L1/Right", 0.2, "on"); //only notes between these pitches will be accepted
-b.sendMsg("/M2/L1/Delay", 2, "on"); // int = milliseconds
-b.sendMsg("/M2/L1/Staccato", 25, "on"); // int = milliseconds
-b.sendMsg("/M2/L1/Prolong", 0.2, "on"); // int = milliseconds
-b.sendMsg("/M2/L1/PulseFreq", 0.0, "on"); // -1.0=5bpm, 1.0=5ms, 0.0=245bpm(mostly the same as 245ms). will change to tremulants behaviour later.
-b.sendMsg("/M2/L1/PulseWidth", 0.2, "on");
-b.sendMsg("/M2/L1/Sostenuto", 0.2, "on"); // sorry, I lost this one in the classical namespace for now... notes with velocity above this value will clear all, lower will toggle notes
-looking for Sustain? see Sostenuto ;-)
-b.sendMsg("/M2/L1/Midi", 0, "on"); // int = channel, 0=off
-b.sendMsg("/M2/L1/DynWidth", 0.2, "on");//not yet ready, will set the width of the dynamic range (for magnet speed)
-b.sendMsg("/M2/L1/DynCenter", 0.2, "on");//not yet ready, will set the center of that range (for magnet speed)
-why this? -> set the width to 0.0, and you can "move" active magnets all at once by altering the center value.
-b.sendMsg("/M2/createLayer");
-
-b.sendMsg("/panic");
-
-// ------------ Live Coding ------------
-
-~bo.clearAll();
+// OSC monitor on/off
+~oscOutMonitor = 2;
 ~oscOutMonitor = 1;
+~oscOutMonitor = 0;
 
-/*
-channels: 0, 1, 2, 3
-notes: 0 - 127
-layers: 1 - ... or nil for all layers
+// tuning
+{SinOsc.ar(60.midicps)!2}.play;
 
-divisions Sauer:
-1 grijs
-13 15 16 17
-2 groen
-12 14 18 19 20
-3 wit
-1 3 4 7 8 11 21 (motor)
-4 paars
-2 5 6 9 10
-5 geel
-22 23 24 25 26 27 28 29 (tremulant)
-6 roze
-30 31 32 33 34 35
+// Manuals are counted from 0, so pedals is 0, manuals 1, 2, 3 are numbers 1, 2, 3. Layers per manual are counted from 1.
+// Often, if the layer is omitted, parameters are set for all layers on that manual
 
-registers Baroque Organ: 36 - 68
+// panic: stop all notes, remove all registers, delete all extra layers
+~bo.panic();
 
-een noot heeft een velocity curve met een attack; bij het nogmaals sturen van de noot met een lagere velocity wordt de attack niet nogmaal uitgevoerd.
-*/
-
-// channel(s), layer(s) or nil for all channels
-~bo.panic(nil);
-
+// trigger a note
 // channel, layer, note(s), velocity
 ~bo.note(2, 2, 85, 127);
 ~bo.note(2, 2, 85, 0);
 ~bo.note(0, 1, 60, 0);
 
-{SinOsc.ar(60.midicps)!2}.play;
-
+// 3 notes to all channels
 ~bo.note(1, nil, [60, 62, 76], 64);
+// shortcut
 ~bo.midinote(1, [60, 62, 76], 64);
 
-// chan, layer, register(s), clear
-~bo.reg(0, 1, [47,49]); // channel, layer, register
-~bo.regAdd(0, 1, 48); // add register 48
-~bo.regAdd(0, 1, [-47, 50]); // remove register 47
+// add registers to Utopa
+// chan, layer, register(s)
+~bo.reg(0, 1, [37,40]); // set only 37 and 40, remove all others
+~bo.regAdd(0, 1, 51); // add register 51
+~bo.regAdd(0, 1, [-40, 42]); // remove register 40 and add register 42
 
-// channel, layer, delay-time / 0-1 is % of 5000ms, 1-.. is absolute in ms
-~bo.delay(1, 1, 10);
-~bo.delay(1, 1, 0); // delay off
+// add registers to Sauer in two steps: Divisions and Registers
 
-// channel, layer, semitones
-~bo.transpose(2, nil, 5);
-~bo.transpose(2, 3, 5);
-
-// chan, layer, division, clear
-~bo.div(2, 1, 3); // manual I layer 1 division wit
-~bo.div(2, 1, 3, false);
+// chan, layer, division
+~bo.div(1, 1, [2, 3]); // set only divisions green (2) and white (3), remove all others
+~bo.divAdd(1, 1, 1); // add division grey (1)
 
 // chan, layer, div, register(s), clear
-~bo.divReg(2, 1, 3, [1, 3, 4]);
-~bo.divReg(2, 1, 3, [1, 3, 4], false);
+~bo.divReg(3, 1); // set only register 1 to division white (3), remove all other stops
+~bo.divReg(3, [1, 3, 4]);
+~bo.divRegAdd(3, [1, 3, 4]); // add registers 1, 3, 4 to division white (3)
 
+// channel, layer, delay-time in milliseconds
+~bo.delay(1, 1, 100);
+~bo.delay(1, 1, 0); // 0 msec = delay off
+
+// add a layer to a channel
+~bo.addLayer(1);
+
+// example: looping notes
+(
+~duration = 0.02;
+~pause = 0.01;
+~play = {
+	var note = 35;
+	var sign = -1;
+	inf.do { arg index;
+		if (index%31 == 0) {
+			sign = sign.neg;
+		};
+		note = max(36, note + sign);
+		// note = rrand(36, 66);
+		~bo.note(0, 1, note, 127);
+		~duration.wait;
+		~bo.note(0, 1, note, 0);
+		~pause.wait;
+	}
+}.fork;
+)
+~play.stop;
 
 // example: setting up manual I
 (
 // layer 1 with three registers
-~bo.reg(2, 1, [36, 40, 49]);
+~bo.reg(1, 1, [36, 40, 51]);
 
-// layer 2 with two registers and a delay of 50ms
-~bo.reg(2, 2, [50, 51]);
-~bo.delay(2, 2, 50);
+// layer 2 with two registers and a delay of 100ms
+~bo.reg(1, 2, [41, 42]);
+~bo.delay(1, 2, 100);
 
-// layer 3 with one register and a delay of 70ms
-~bo.reg(2, 3, 60);
-~bo.delay(2, 3, 70);
+// layer 3 with one register and a delay of 200ms
+~bo.reg(1, 3, 62);
+~bo.delay(1, 3, 200);
+
+// layer 4 with two registers and a delay of 300ms
+~bo.reg(1, 4, [53, 54]);
+~bo.delay(1, 4, 300);
+
+// add a layer
+~bo.addLayer(1);
+
+// layer 5 with two registers and a delay of 400ms
+~bo.reg(1, 4, [37, 38]);
+~bo.delay(1, 4, 400);
+
+)
 
 // send a note to all layers
-~bo.note(2, nil, 60, 127);
-)
-~bo.note(2, nil, 60, 0); // stop note
+~bo.note(1, nil, 60, 127);
 
+// stop note
+~bo.note(1, nil, 60, 0);
+
+// transposing
+~bo.transpose(1, 2, 9);
+~bo.transpose(0, 1, 0);
+(
+~pause = 0.1;
+~transpose = {
+	var semitones = 0;
+	var sign = -1;
+	inf.do { arg index;
+		if ( index%24 == 0 ) {
+			sign = sign.neg;
+		};
+		semitones = semitones + sign;
+		~bo.transpose(1, 1, semitones);
+		~pause.wait;
+	};
+}.fork;
+)
+~transpose.stop;
+
+~bo.staccato(1, 1, 10);
+~bo.staccato(1, 1, 0);
+
+~bo.prolong(1, 1, 600);
+~bo.prolong(0, 1, 0);
+
+~bo.pulsefreq(1, 1, 0.5)
+~bo.pulsefreq(1, 1, 0.5, \off)
+~bo.pulsewidth(1, 1, 0.5)
+~bo.pulsewidth(1, 1, 0.5, \off)
+
+~bo.trem('OW', 100, 0.6);
+~bo.trem('OW', 100, 0.6, \off);
+~bo.trem('HW', 250, 0.6);
+
+~bo.sostenuto(1, 1, 0.9);
+~bo.sostenuto(1, 1, 0.7, \off);
+
+~bo.sustain(1, 1, 0.9);
+~bo.sustain(1, 1, 0.7, \off);
+
+// schwell pedal 0 is Utopa air and schwell pedal 2 is the Sauer schwellchest
+~bo.sp(0, 0);
+~bo.sp(0, 127);
+~bo.sp(2, 0);
+~bo.sp(2, 127);
+
+(
+~pedal = 0;
+~pause = 0.1;
+~step = 1;
+~sp = {
+	var value = 0;
+	var sign = ~step.neg;
+	inf.do { arg index;
+		if ( index%127 == 0 ) {
+			sign = sign.neg;
+		};
+		value = value + sign;
+		value = min(127, max(0, value));
+		~bo.sp(~pedal, value);
+		~pause.wait;
+	};
+}.fork;
+)
+~sp.stop;
+
+// not working
+~bo.mute(1, 1);
+~bo.mute(1, 1, \off);
 
 
 
