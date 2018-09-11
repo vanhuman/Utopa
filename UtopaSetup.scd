@@ -3,7 +3,7 @@
 // ----------------------------- Setup environment -----------------------------
 // connect with DHCP to server 192.168.0.60
 
-~testMode = true;
+~testMode = false;
 ~showGui = true;
 
 if(~bo.notNil, { ~bo.clearAll() });
@@ -47,14 +47,16 @@ if (~showGui) {
 
 // trigger a note
 // channel, layer, note(s), velocity
-~bo.note(2, 2, 85, 127);
-~bo.note(2, 2, 85, 0);
+~bo.note(0, 1, 85, 127);
+~bo.note(0, 1, 85, 0);
 ~bo.note(0, 1, 60, 0);
+~bo.note(0, nil, 60, 0);
 
 // 3 notes to all channels
-~bo.note(1, nil, [60, 62, 76], 64);
+~bo.note(0, nil, [60, 62, 76], 64);
+~bo.note(0, nil, [60, 62, 76], 0);
 // shortcut
-~bo.midinote(1, [60, 62, 76], 64);
+~bo.midinote(0, [60, 62, 76], 64);
 
 // add registers to Utopa
 // chan, layer, register(s)
@@ -65,25 +67,22 @@ if (~showGui) {
 // add registers to Sauer in two steps: Divisions and Registers
 
 // chan, layer, division
-~bo.div(1, 1, [2, 3]); // set only divisions green (2) and white (3), remove all others
-~bo.divAdd(1, 1, 1); // add division grey (1)
+~bo.div(0, 1, [2, 3]); // set only divisions green (2) and white (3), remove all others
+~bo.divAdd(0, 1, 1); // add division grey (1)
 
 // chan, layer, div, register(s), clear
 ~bo.divReg(3, 1); // set only register 1 to division white (3), remove all other stops
 ~bo.divReg(3, [1, 3, 4]);
-~bo.divRegAdd(3, [1, 3, 4]); // add registers 1, 3, 4 to division white (3)
+~bo.divRegAdd(3, [1, 3, 4, 7]); // add registers 1, 3, 4 to division white (3)
 
-// channel, layer, delay-time in milliseconds
-~bo.delay(1, 1, 100);
-~bo.delay(1, 1, 0); // 0 msec = delay off
-
-// add a layer to a channel
-~bo.addLayer(1);
+// layer 2 with two registers and a delay of 100ms
+~bo.reg(0, 2, [41, 42]);
+~bo.delay(0, 2, 200);
 
 // example: looping notes
 (
-~duration = 0.02;
-~pause = 0.01;
+~duration = 0.1;
+~pause = 0.2;
 ~play = {
 	var note = 35;
 	var sign = -1;
@@ -91,16 +90,31 @@ if (~showGui) {
 		if (index%31 == 0) {
 			sign = sign.neg;
 		};
-		note = max(36, note + sign);
-		// note = rrand(36, 66);
-		~bo.note(0, 1, note, 127);
+		// note = max(36, note + sign);
+		note = rrand(36, 66);
+		~bo.note(0, nil, note, 127);
 		~duration.wait;
-		~bo.note(0, 1, note, 0);
+		~bo.note(0, nil, note, 0);
 		~pause.wait;
 	}
 }.fork;
 )
 ~play.stop;
+
+// transposing
+~bo.transpose(0, 1, 3);
+~bo.transpose(0, 1, 0);
+~bo.transpose(0, 2, 8);
+~bo.transpose(0, 2, 0);
+
+~bo.staccato(0, 1, 50);
+~bo.staccato(0, 1, 0);
+~bo.staccato(0, 2, 50);
+~bo.staccato(0, 2, 0);
+
+
+
+
 
 // example: setting up manual I
 (
@@ -108,8 +122,8 @@ if (~showGui) {
 ~bo.reg(1, 1, [36, 40, 51]);
 
 // layer 2 with two registers and a delay of 100ms
-~bo.reg(1, 2, [41, 42]);
-~bo.delay(1, 2, 100);
+~bo.reg(0, 2, [41, 42]);
+~bo.delay(0, 2, 100);
 
 // layer 3 with one register and a delay of 200ms
 ~bo.reg(1, 3, 62);
@@ -123,10 +137,12 @@ if (~showGui) {
 ~bo.addLayer(1);
 
 // layer 5 with two registers and a delay of 400ms
-~bo.reg(1, 4, [37, 38]);
-~bo.delay(1, 4, 400);
+~bo.reg(1, 5, [37, 38]);
+~bo.delay(1, 5, 400);
 
 )
+
+
 
 // send a note to all layers
 ~bo.note(1, nil, 60, 127);
@@ -134,8 +150,15 @@ if (~showGui) {
 // stop note
 ~bo.note(1, nil, 60, 0);
 
+// channel, layer, delay-time in milliseconds
+~bo.delay(1, 1, 100);
+~bo.delay(1, 1, 0); // 0 msec = delay off
+
+// add a layer to a channel
+~bo.addLayer(1);
+
 // transposing
-~bo.transpose(1, 2, 9);
+~bo.transpose(1, 2, 0);
 ~bo.transpose(0, 1, 0);
 (
 ~pause = 0.1;
@@ -154,18 +177,18 @@ if (~showGui) {
 )
 ~transpose.stop;
 
-~bo.staccato(1, 1, 10);
-~bo.staccato(1, 1, 0);
+~bo.staccato(0, 2, 10);
+~bo.staccato(0, 2, 0);
 
-~bo.prolong(1, 1, 600);
-~bo.prolong(0, 1, 0);
+~bo.prolong(0, 2, 600);
+~bo.prolong(0, 2, 0);
 
-~bo.pulsefreq(1, 1, 0.5)
-~bo.pulsefreq(1, 1, 0.5, \off)
-~bo.pulsewidth(1, 1, 0.5)
+~bo.pulsefreq(0, 2, 0.5)
+~bo.pulsefreq(0, 1, 0.5, \off)
+~bo.pulsewidth(0, 1, 0.4)
 ~bo.pulsewidth(1, 1, 0.5, \off)
 
-~bo.trem('OW', 100, 0.6);
+~bo.trem('OW', 150, 0.3);
 ~bo.trem('OW', 100, 0.6, \off);
 ~bo.trem('HW', 250, 0.6);
 

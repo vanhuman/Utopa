@@ -238,7 +238,7 @@
 	// werk = 'OW' or 'HW', pulsewidth = 0.0 - 1.0
 	arg evt, werk = 'OW', msec, pulsewidth = 0.5, on = \on;
 	var onOff = if(on == \on, { "on" }, { "off" });
-	evt.addr.sendMsg("/Trem" ++ werk, onOff, pulsewidth, '"' ++ msec.asString ++ 'ms"');
+	evt.addr.sendMsg("/Trem" ++ werk, onOff, pulsewidth, msec.asString ++ 'ms');
 	""
 };
 

@@ -25,16 +25,16 @@
 			evt.panic();
 			buttonStopClock = AppClock.sched(1, {
 				bt.value = 0;
-				"Create extra layers".postln;
-				Task.new({
-					evt.addLayer(0);
-					0.01.wait;
-					evt.addLayer(1);
-					0.01.wait;
-					evt.addLayer(2);
-					0.01.wait;
-					evt.addLayer(3);
-				}).start;
+				// "Create extra layers".postln;
+				// Task.new({
+				// 	evt.addLayer(0);
+				// 	0.01.wait;
+				// 	evt.addLayer(1);
+				// 	0.01.wait;
+				// 	evt.addLayer(2);
+				// 	0.01.wait;
+				// 	evt.addLayer(3);
+				// }).start;
 				nil
 			});
 		});
